@@ -418,6 +418,11 @@ def index():
     return send_from_directory("static", "index.html")
 
 
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "app": "beatdrop", "engineered_by": "Ritesh"}), 200
+
+
 @app.route("/api/presets", methods=["GET"])
 def get_presets():
     return jsonify({"presets": PRESETS})
