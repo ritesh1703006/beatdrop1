@@ -687,6 +687,483 @@ body {
   text-transform: uppercase;
 }
 
+/* Online Multiplayer Lobby & Match HUD */
+.online-player-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+}
+
+.online-player-name-row input {
+  background: var(--bg-input);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xs);
+  padding: 0.55rem 0.85rem;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  transition: var(--transition-fast);
+}
+
+.online-player-name-row input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(255, 183, 3, 0.25);
+  outline: none;
+}
+
+.online-status-box {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.online-status-box.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.online-status-box.info {
+  background: rgba(255, 183, 3, 0.12);
+  border: 1px solid rgba(255, 183, 3, 0.35);
+  color: #ffb703;
+}
+
+.online-lobby-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: viewFade 0.25s ease-out;
+}
+
+.lobby-code-badge-housing {
+  background: linear-gradient(135deg, rgba(255, 183, 3, 0.08), rgba(245, 158, 11, 0.03));
+  border: 1px solid rgba(255, 183, 3, 0.3);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lobby-label-sub {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--accent-gold);
+}
+
+.lobby-code-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lobby-code-display strong {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(255, 183, 3, 0.5);
+}
+
+.btn-copy-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  color: #fff;
+  padding: 0.35rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: var(--transition-fast);
+}
+
+.btn-copy-pill:hover {
+  background: var(--accent-gold);
+  color: #0b0d14;
+  border-color: var(--accent-gold);
+}
+
+.lobby-share-strip {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.btn-share-action {
+  flex: 1;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: var(--transition-fast);
+}
+
+.btn-share-action.copy {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-medium);
+  color: #fff;
+}
+
+.btn-share-action.copy:hover {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.btn-share-action.whatsapp {
+  background: #25D366;
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25);
+}
+
+.btn-share-action.whatsapp:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.lobby-roster-bay {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: var(--bg-surface-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+}
+
+.roster-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.roster-avatar {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.roster-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+.roster-meta strong {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-status {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.roster-status.connected {
+  color: #10b981;
+}
+
+.roster-status.waiting {
+  color: var(--accent-gold);
+  animation: pulseOpacity 1.5s infinite;
+}
+
+@keyframes pulseOpacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.roster-vs-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+  background: rgba(255, 183, 3, 0.12);
+  border: 1px solid rgba(255, 183, 3, 0.3);
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.lobby-deck-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  padding: 0.5rem 0.85rem;
+}
+
+.lobby-deck-info strong {
+  color: #fff;
+}
+
+.lobby-action-dock {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-studio-launch {
+  flex: 2;
+  background: linear-gradient(135deg, var(--accent-gold), #f59e0b);
+  border: none;
+  border-radius: var(--radius-xs);
+  color: #0b0d14;
+  padding: 0.8rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 18px rgba(255, 183, 3, 0.35);
+  animation: pulseGoldButton 2s infinite;
+}
+
+@keyframes pulseGoldButton {
+  0%, 100% { box-shadow: 0 4px 18px rgba(255, 183, 3, 0.35); }
+  50% { box-shadow: 0 4px 28px rgba(255, 183, 3, 0.65); transform: translateY(-1px); }
+}
+
+.guest-waiting-cue {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 183, 3, 0.08);
+  border: 1px solid rgba(255, 183, 3, 0.3);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+}
+
+.cue-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 183, 3, 0.3);
+  border-top-color: var(--accent-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.btn-leave-lobby {
+  background: transparent;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xs);
+  color: var(--text-dim);
+  padding: 0.8rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: var(--transition-fast);
+}
+
+.btn-leave-lobby:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Online In-Game Match HUD */
+.online-match-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface-base);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xs);
+  padding: 0.45rem 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.hud-player-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud-role-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.hud-player-name {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #fff;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-score-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-xs);
+}
+
+.host-side .hud-score-badge {
+  background: rgba(2, 132, 199, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(2, 132, 199, 0.4);
+}
+
+.guest-side .hud-score-badge {
+  background: rgba(234, 88, 12, 0.2);
+  color: #fb923c;
+  border: 1px solid rgba(234, 88, 12, 0.4);
+}
+
+.hud-match-telemetry {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.hud-round-indicator {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+}
+
+.hud-countdown-meter {
+  background: #ef4444;
+  color: #fff;
+  border-radius: var(--radius-full);
+  padding: 0.15rem 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  animation: pulseAlert 0.8s infinite;
+}
+
+@keyframes pulseAlert {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+/* Online Mobile Buzzer Deck */
+.online-buzzer-container {
+  margin: 0.5rem 0;
+  animation: viewFade 0.2s ease-out;
+}
+
+.btn-online-buzzer {
+  width: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1.25rem;
+  cursor: pointer;
+  color: #0b0d14;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
+  transition: transform 0.15s ease, filter 0.15s ease;
+  overflow: hidden;
+}
+
+.btn-online-buzzer:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-online-buzzer:active {
+  transform: translateY(1px);
+}
+
+.btn-online-buzzer.active-buzzer {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.6);
+}
+
+.btn-online-buzzer.locked-out {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.online-buzzer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.buzzer-bolt-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.buzzer-text-stack {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.buzzer-main-label {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.buzzer-sub-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
 /* Platform Strip */
 .platform-strip {
   display: flex;

@@ -24,6 +24,19 @@ const state = {
   p2: { name: "Player 2", score: 0 },
   activeBuzzer: null,
 
+  // Online Multiplayer Room State
+  online: {
+    roomId: null,
+    token: null,
+    role: null, // "host" | "guest" | "spectator"
+    playerName: localStorage.getItem("beatdrop_dj_name") || "Player 1",
+    pollTimer: null,
+    lastStatus: null,
+    lastRound: 0,
+    isHost: false,
+    hasBuzzedThisRound: false
+  },
+
   // Playlist info
   playlistId: null,
   playlistTitle: "",
@@ -289,9 +302,43 @@ const duelUI = {
   inputP2Name: document.getElementById("input-p2-name"),
   modeChip: document.getElementById("current-mode-chip"),
   startBtnLabel: document.getElementById("start-btn-label"),
+
+  // Online multiplayer elements
+  prejoinView: document.getElementById("online-prejoin-view"),
+  inputPlayerName: document.getElementById("input-online-player-name"),
   btnCreateRoom: document.getElementById("btn-create-room"),
   btnJoinRoom: document.getElementById("btn-join-room"),
   inputRoomCode: document.getElementById("input-room-code"),
+  onlineStatusCue: document.getElementById("online-status-cue"),
+
+  activeLobby: document.getElementById("online-active-lobby"),
+  lobbyCodeText: document.getElementById("lobby-code-text"),
+  btnCopyCode: document.getElementById("btn-copy-code"),
+  btnCopyRoomLink: document.getElementById("btn-copy-room-link"),
+  btnWhatsappRoomLink: document.getElementById("btn-whatsapp-room-link"),
+  lobbyHostName: document.getElementById("lobby-host-name"),
+  lobbyGuestName: document.getElementById("lobby-guest-name"),
+  lobbyGuestStatus: document.getElementById("lobby-guest-status"),
+  lobbyDeckTitle: document.getElementById("lobby-deck-title"),
+  btnLobbyStart: document.getElementById("btn-lobby-start"),
+  lobbyGuestBanner: document.getElementById("lobby-guest-banner"),
+  btnLeaveRoom: document.getElementById("btn-leave-room"),
+
+  // Online HUD & buzzer in game screen
+  onlineMatchStrip: document.getElementById("online-match-strip"),
+  onlineHudHostName: document.getElementById("online-hud-host-name"),
+  onlineHudHostScore: document.getElementById("online-hud-host-score"),
+  onlineHudGuestName: document.getElementById("online-hud-guest-name"),
+  onlineHudGuestScore: document.getElementById("online-hud-guest-score"),
+  onlineHudRound: document.getElementById("online-hud-round"),
+  onlineBuzzerCountdown: document.getElementById("online-buzzer-countdown"),
+  onlineTimerSeconds: document.getElementById("online-timer-seconds"),
+  onlineBuzzerBay: document.getElementById("online-buzzer-bay"),
+  btnOnlineBuzzer: document.getElementById("btn-online-buzzer"),
+  onlineBuzzerLabel: document.getElementById("online-buzzer-label"),
+  onlineBuzzerSubtext: document.getElementById("online-buzzer-subtext"),
+
+  // Duel summary
   duelSummaryPod: document.getElementById("duel-summary-pod"),
   soloSummaryMatrix: document.getElementById("solo-summary-matrix"),
   duelWinnerName: document.getElementById("duel-winner-name"),
@@ -432,6 +479,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupVisualizerBars();
   loadPresets();
   attachEventListeners();
+  initOnlineRoomParams();
 });
 
 async function loadPresets() {
@@ -524,25 +572,27 @@ function attachEventListeners() {
   if (duelUI.btnBuzzP1) duelUI.btnBuzzP1.addEventListener("click", () => handleBuzzerPress(1));
   if (duelUI.btnBuzzP2) duelUI.btnBuzzP2.addEventListener("click", () => handleBuzzerPress(2));
 
-  // Online room handlers
-  if (duelUI.btnCreateRoom) {
-    duelUI.btnCreateRoom.addEventListener("click", () => {
-      const code = "DHH-" + Math.floor(100 + Math.random() * 900);
-      const url = window.location.origin + window.location.pathname + "?room=" + code;
-      navigator.clipboard.writeText(url).catch(() => {});
-      alert(`🎉 Room Created: ${code}\nShare Link copied to clipboard!\nSend this link to your partner to duel.`);
-    });
-  }
-  if (duelUI.btnJoinRoom && duelUI.inputRoomCode) {
+  // Online multiplayer handlers
+  if (duelUI.btnCreateRoom) duelUI.btnCreateRoom.addEventListener("click", createOnlineRoom);
+  if (duelUI.btnJoinRoom) {
     duelUI.btnJoinRoom.addEventListener("click", () => {
-      const val = duelUI.inputRoomCode.value.trim().toUpperCase();
-      if (!val) {
-        alert("Please enter a room code (e.g. DHH-77).");
-        return;
-      }
-      alert(`Joining Room ${val}... Connected! Paste playlist or choose a deck to battle.`);
+      const code = duelUI.inputRoomCode ? duelUI.inputRoomCode.value.trim() : "";
+      joinOnlineRoom(code);
     });
   }
+  if (duelUI.inputRoomCode) {
+    duelUI.inputRoomCode.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        joinOnlineRoom(duelUI.inputRoomCode.value.trim());
+      }
+    });
+  }
+  if (duelUI.btnCopyCode) duelUI.btnCopyCode.addEventListener("click", copyRoomCode);
+  if (duelUI.btnCopyRoomLink) duelUI.btnCopyRoomLink.addEventListener("click", copyRoomLink);
+  if (duelUI.btnWhatsappRoomLink) duelUI.btnWhatsappRoomLink.addEventListener("click", shareRoomWhatsApp);
+  if (duelUI.btnLobbyStart) duelUI.btnLobbyStart.addEventListener("click", startOnlineBattle);
+  if (duelUI.btnLeaveRoom) duelUI.btnLeaveRoom.addEventListener("click", () => leaveOnlineRoom(true));
+  if (duelUI.btnOnlineBuzzer) duelUI.btnOnlineBuzzer.addEventListener("click", buzzOnline);
 
   const btnToggleSfx = document.getElementById("btn-toggle-sfx");
   const sfxIcon = document.getElementById("sfx-icon");
@@ -587,6 +637,15 @@ function attachEventListeners() {
       } else if (e.code === "KeyL") {
         e.preventDefault();
         handleBuzzerPress(2);
+        return;
+      }
+    }
+
+    // In 1v1 online mode, Space or B buzzes in!
+    if (state.mode === "duel-online" && screens.game.classList.contains("active") && modalReveal.overlay.style.display === "none") {
+      if (e.code === "Space" || e.code === "KeyB") {
+        e.preventDefault();
+        buzzOnline();
         return;
       }
     }
@@ -652,6 +711,555 @@ function updateDuelScoreboard() {
   if (duelNav.p2Score) duelNav.p2Score.textContent = state.p2.score.toLocaleString();
 }
 
+// ============================================================
+// ONLINE MULTIPLAYER ROOM ENGINE (REAL-TIME 2-PLAYER)
+// ============================================================
+
+function showOnlineStatus(msg, type = "info") {
+  if (!duelUI.onlineStatusCue) return;
+  if (!msg) {
+    duelUI.onlineStatusCue.style.display = "none";
+    duelUI.onlineStatusCue.innerHTML = "";
+    return;
+  }
+  duelUI.onlineStatusCue.className = `online-status-box ${type}`;
+  duelUI.onlineStatusCue.innerHTML = msg;
+  duelUI.onlineStatusCue.style.display = "flex";
+}
+
+function initOnlineRoomParams() {
+  const params = new URLSearchParams(window.location.search);
+  const roomCode = params.get("room") || params.get("join");
+  if (roomCode) {
+    const cleanCode = roomCode.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const onlineBtn = document.querySelector('[data-mode="duel-online"]');
+    if (onlineBtn) onlineBtn.click();
+
+    if (duelUI.inputRoomCode) duelUI.inputRoomCode.value = cleanCode;
+    showOnlineStatus(`🎯 Invited to Room <strong>${escapeHtml(cleanCode)}</strong>! Enter your name and tap <strong>JOIN</strong> to battle!`, "info");
+    if (duelUI.onlineConfig) duelUI.onlineConfig.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+function getStoredPlayerName(defaultName = "Player 1") {
+  if (duelUI.inputPlayerName && duelUI.inputPlayerName.value.trim()) {
+    const name = duelUI.inputPlayerName.value.trim();
+    localStorage.setItem("beatdrop_dj_name", name);
+    return name;
+  }
+  const stored = localStorage.getItem("beatdrop_dj_name");
+  return stored || defaultName;
+}
+
+async function createOnlineRoom() {
+  const playerName = getStoredPlayerName("Host");
+  const playlistUrl = setupUI.urlInput.value.trim();
+
+  showOnlineStatus("⏳ Creating private room and preparing audio catalog...", "info");
+  if (duelUI.btnCreateRoom) duelUI.btnCreateRoom.disabled = true;
+
+  try {
+    const res = await fetch("/api/room/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        player_name: playerName,
+        playlist_url: playlistUrl
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      showOnlineStatus(data.error || "Could not create room.", "error");
+      return;
+    }
+
+    state.online.roomId = data.room_id;
+    state.online.token = data.token;
+    state.online.role = data.role;
+    state.online.isHost = true;
+    state.online.playerName = playerName;
+    state.mode = "duel-online";
+
+    window.history.replaceState({}, "", `?room=${data.room_id}`);
+
+    if (duelUI.prejoinView) duelUI.prejoinView.style.display = "none";
+    if (duelUI.activeLobby) duelUI.activeLobby.style.display = "flex";
+
+    renderRoomLobby(data.room, "host");
+    startRoomPolling();
+    playSFX("click");
+  } catch (err) {
+    showOnlineStatus("Network error creating room: " + err.message, "error");
+  } finally {
+    if (duelUI.btnCreateRoom) duelUI.btnCreateRoom.disabled = false;
+  }
+}
+
+async function joinOnlineRoom(rawCode) {
+  const cleanCode = (rawCode || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  if (!cleanCode) {
+    showOnlineStatus("Please enter a valid Room Code (e.g. DHH42).", "error");
+    if (duelUI.inputRoomCode) duelUI.inputRoomCode.focus();
+    return;
+  }
+
+  const playerName = getStoredPlayerName("Guest");
+  showOnlineStatus(`Connecting to Room <strong>${cleanCode}</strong>...`, "info");
+  if (duelUI.btnJoinRoom) duelUI.btnJoinRoom.disabled = true;
+
+  try {
+    const res = await fetch("/api/room/join", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        room_id: cleanCode,
+        player_name: playerName
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      showOnlineStatus(data.error || "Failed to join room.", "error");
+      return;
+    }
+
+    state.online.roomId = data.room_id;
+    state.online.token = data.token;
+    state.online.role = data.role;
+    state.online.isHost = false;
+    state.online.playerName = playerName;
+    state.mode = "duel-online";
+
+    window.history.replaceState({}, "", `?room=${data.room_id}`);
+
+    if (duelUI.prejoinView) duelUI.prejoinView.style.display = "none";
+    if (duelUI.activeLobby) duelUI.activeLobby.style.display = "flex";
+
+    renderRoomLobby(data.room, "guest");
+    startRoomPolling();
+    playSFX("click");
+  } catch (err) {
+    showOnlineStatus("Network error joining room: " + err.message, "error");
+  } finally {
+    if (duelUI.btnJoinRoom) duelUI.btnJoinRoom.disabled = false;
+  }
+}
+
+function startRoomPolling() {
+  if (state.online.pollTimer) clearInterval(state.online.pollTimer);
+  pollRoomStatus();
+  state.online.pollTimer = setInterval(pollRoomStatus, 1000);
+}
+
+function stopRoomPolling() {
+  if (state.online.pollTimer) {
+    clearInterval(state.online.pollTimer);
+    state.online.pollTimer = null;
+  }
+}
+
+async function pollRoomStatus() {
+  if (!state.online.roomId || !state.online.token) return;
+
+  try {
+    const res = await fetch(`/api/room/${state.online.roomId}?token=${state.online.token}`);
+    if (res.status === 404) {
+      stopRoomPolling();
+      alert("This room has ended or was closed by the host.");
+      leaveOnlineRoom(false);
+      return;
+    }
+
+    const data = await res.json();
+    if (res.ok && data.room) {
+      handleRoomUpdate(data.room, data.role || state.online.role);
+    }
+  } catch (err) {
+    // Ignore transient hiccups
+  }
+}
+
+function renderRoomLobby(room, role) {
+  if (!room) return;
+  if (duelUI.lobbyCodeText) duelUI.lobbyCodeText.textContent = room.id;
+  if (duelUI.lobbyHostName) duelUI.lobbyHostName.textContent = room.host ? room.host.name : "Host";
+
+  if (room.guest) {
+    if (duelUI.lobbyGuestName) duelUI.lobbyGuestName.textContent = room.guest.name;
+    if (duelUI.lobbyGuestStatus) {
+      duelUI.lobbyGuestStatus.className = "roster-status connected";
+      duelUI.lobbyGuestStatus.textContent = room.guest.connected ? "🟢 Ready to Battle" : "⏳ Reconnecting...";
+    }
+  } else {
+    if (duelUI.lobbyGuestName) duelUI.lobbyGuestName.textContent = "Waiting for Player 2...";
+    if (duelUI.lobbyGuestStatus) {
+      duelUI.lobbyGuestStatus.className = "roster-status waiting";
+      duelUI.lobbyGuestStatus.textContent = "⏳ Share code or invite link to battle";
+    }
+  }
+
+  if (duelUI.lobbyDeckTitle) duelUI.lobbyDeckTitle.textContent = room.playlist_name || "Curated Deck";
+
+  const isHost = (role === "host" || state.online.isHost);
+  if (isHost) {
+    if (duelUI.btnLobbyStart) {
+      duelUI.btnLobbyStart.style.display = "flex";
+      duelUI.btnLobbyStart.innerHTML = room.guest 
+        ? '<i class="fa-solid fa-bolt"></i> <span>START 1V1 BATTLE</span>'
+        : '<i class="fa-solid fa-bolt"></i> <span>START (WAITING FOR GUEST)</span>';
+    }
+    if (duelUI.lobbyGuestBanner) duelUI.lobbyGuestBanner.style.display = "none";
+  } else {
+    if (duelUI.btnLobbyStart) duelUI.btnLobbyStart.style.display = "none";
+    if (duelUI.lobbyGuestBanner) duelUI.lobbyGuestBanner.style.display = "flex";
+  }
+}
+
+function handleRoomUpdate(room, role) {
+  if (!room) return;
+  const isHost = (role === "host" || state.online.isHost);
+
+  // If in Setup screen, update lobby
+  if (screens.setup.classList.contains("active")) {
+    renderRoomLobby(room, role);
+  }
+
+  // Populate autocomplete suggestions from room pool
+  if (room.autocomplete_pool && room.autocomplete_pool.length > 0) {
+    state.tracks = room.autocomplete_pool;
+  }
+
+  // Check state transitions
+  if (room.status === "playing") {
+    if (!screens.game.classList.contains("active")) {
+      showScreen("game");
+      if (gameUI.playlistTitle) gameUI.playlistTitle.textContent = room.playlist_name || "1v1 Duel";
+      if (gameUI.playlistCount) gameUI.playlistCount.textContent = `${room.total_rounds} ROUNDS`;
+    }
+
+    if (duelUI.onlineHudHostName) duelUI.onlineHudHostName.textContent = room.host ? room.host.name : "Host";
+    if (duelUI.onlineHudHostScore) duelUI.onlineHudHostScore.textContent = `${room.host ? room.host.score : 0} PTS`;
+    if (duelUI.onlineHudGuestName) duelUI.onlineHudGuestName.textContent = room.guest ? room.guest.name : "Guest";
+    if (duelUI.onlineHudGuestScore) duelUI.onlineHudGuestScore.textContent = `${room.guest ? room.guest.score : 0} PTS`;
+    if (duelUI.onlineHudRound) duelUI.onlineHudRound.textContent = `ROUND ${room.round} / ${room.total_rounds}`;
+
+    if (state.online.lastRound !== room.round) {
+      state.online.lastRound = room.round;
+      modalReveal.overlay.style.display = "none";
+      clearGuessInput();
+      resetOnlineBuzzerUI();
+
+      if (room.current_track) {
+        state.currentSong = {
+          id: room.current_track.videoId,
+          title: "Mystery Song",
+          artist: "Mystery Artist",
+          thumbnail: ""
+        };
+        state.startOffset = room.current_track.start_seconds || 0;
+        playCurrentSnippet();
+      }
+    }
+
+    // Buzzer state
+    if (room.buzzer) {
+      if (duelUI.onlineBuzzerCountdown) duelUI.onlineBuzzerCountdown.style.display = "inline-flex";
+      if (duelUI.onlineTimerSeconds) duelUI.onlineTimerSeconds.textContent = `${room.buzzer.seconds_left}s`;
+
+      const amIBuzzer = (room.buzzer.player === role);
+      if (amIBuzzer) {
+        if (duelUI.btnOnlineBuzzer) {
+          duelUI.btnOnlineBuzzer.className = "btn-online-buzzer active-buzzer";
+        }
+        if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = "⚡ YOU BUZZED! (GUESS NOW)";
+        if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = `${room.buzzer.seconds_left}s remaining to submit guess`;
+        
+        gameUI.guessInput.disabled = false;
+        gameUI.guessInput.focus();
+        stopSnippetPlayback();
+      } else {
+        if (duelUI.btnOnlineBuzzer) {
+          duelUI.btnOnlineBuzzer.className = "btn-online-buzzer locked-out";
+        }
+        if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = `⏳ ${room.buzzer.player_name.toUpperCase()} BUZZED!`;
+        if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Waiting for opponent's guess...";
+        
+        gameUI.guessInput.disabled = true;
+        stopSnippetPlayback();
+      }
+    } else {
+      if (duelUI.onlineBuzzerCountdown) duelUI.onlineBuzzerCountdown.style.display = "none";
+      if (duelUI.btnOnlineBuzzer) {
+        duelUI.btnOnlineBuzzer.className = "btn-online-buzzer";
+      }
+      if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = "⚡ TAP TO BUZZ IN!";
+      if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Freezes music & unlocks 10s guess window";
+      
+      gameUI.guessInput.disabled = true;
+    }
+  } else if (room.status === "revealed") {
+    stopSnippetPlayback();
+    if (modalReveal.overlay.style.display !== "flex") {
+      showOnlineTrackReveal(room, role);
+    }
+  } else if (room.status === "finished") {
+    stopSnippetPlayback();
+    modalReveal.overlay.style.display = "none";
+    showOnlineSessionSummary(room);
+  }
+}
+
+function resetOnlineBuzzerUI() {
+  if (duelUI.btnOnlineBuzzer) duelUI.btnOnlineBuzzer.className = "btn-online-buzzer";
+  if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = "⚡ TAP TO BUZZ IN!";
+  if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Freezes music & unlocks 10s guess window";
+  if (duelUI.onlineBuzzerCountdown) duelUI.onlineBuzzerCountdown.style.display = "none";
+  gameUI.guessInput.disabled = true;
+}
+
+function showOnlineTrackReveal(room, role) {
+  const result = room.round_result || {};
+  modalReveal.overlay.style.display = "flex";
+
+  if (modalReveal.thumb) modalReveal.thumb.src = result.thumbnail || "";
+  if (modalReveal.songTitle) modalReveal.songTitle.textContent = result.song_title || "Unknown Song";
+  if (modalReveal.artistName) modalReveal.artistName.textContent = result.artist_name || "Unknown Artist";
+  if (modalReveal.timeTaken) modalReveal.timeTaken.textContent = `Round ${room.round}`;
+  if (modalReveal.ytLink && result.videoId) {
+    modalReveal.ytLink.href = `https://www.youtube.com/watch?v=${result.videoId}`;
+  }
+
+  const amIWinner = (result.winner === role);
+  if (amIWinner) {
+    playSFX("win");
+    if (modalReveal.badge) modalReveal.badge.innerHTML = '<i class="fa-solid fa-trophy"></i> ROUND WON!';
+    if (modalReveal.title) modalReveal.title.textContent = "YOU EARNED 1 POINT!";
+    if (modalReveal.pointsEarned) modalReveal.pointsEarned.textContent = "+1 PT";
+    triggerConfetti();
+  } else if (result.winner) {
+    playSFX("wrong");
+    if (modalReveal.badge) modalReveal.badge.innerHTML = '<i class="fa-solid fa-bolt"></i> OPPONENT SCORED';
+    if (modalReveal.title) modalReveal.title.textContent = `${result.winner_name} WON THIS ROUND!`;
+    if (modalReveal.pointsEarned) modalReveal.pointsEarned.textContent = "+0 PTS";
+  } else {
+    playSFX("wrong");
+    if (modalReveal.badge) modalReveal.badge.innerHTML = '<i class="fa-solid fa-forward-step"></i> TRACK REVEALED';
+    if (modalReveal.title) modalReveal.title.textContent = "NO POINTS AWARDED";
+    if (modalReveal.pointsEarned) modalReveal.pointsEarned.textContent = "+0 PTS";
+  }
+
+  const isHost = (role === "host" || state.online.isHost);
+  if (isHost) {
+    modalReveal.btnNextRound.disabled = false;
+    modalReveal.btnNextRound.innerHTML = (room.round >= room.total_rounds)
+      ? '<span>VIEW FINAL SCORES</span> <i class="fa-solid fa-trophy"></i>'
+      : `<span>NEXT TRACK (ROUND ${room.round + 1})</span> <i class="fa-solid fa-arrow-right"></i>`;
+  } else {
+    modalReveal.btnNextRound.disabled = true;
+    modalReveal.btnNextRound.innerHTML = '<span>WAITING FOR HOST TO ADVANCE...</span>';
+  }
+}
+
+function showOnlineSessionSummary(room) {
+  modalSummary.overlay.style.display = "flex";
+  if (duelUI.soloSummaryMatrix) duelUI.soloSummaryMatrix.style.display = "none";
+  if (duelUI.duelSummaryPod) duelUI.duelSummaryPod.style.display = "block";
+
+  const hostName = room.host ? room.host.name : "Player 1";
+  const hostScore = room.host ? room.host.score : 0;
+  const guestName = room.guest ? room.guest.name : "Player 2";
+  const guestScore = room.guest ? room.guest.score : 0;
+
+  if (duelUI.duelP1FinalLabel) duelUI.duelP1FinalLabel.textContent = hostName.toUpperCase();
+  if (duelUI.duelP1FinalScore) duelUI.duelP1FinalScore.textContent = `${hostScore} PTS`;
+  if (duelUI.duelP2FinalLabel) duelUI.duelP2FinalLabel.textContent = guestName.toUpperCase();
+  if (duelUI.duelP2FinalScore) duelUI.duelP2FinalScore.textContent = `${guestScore} PTS`;
+
+  if (hostScore > guestScore) {
+    if (duelUI.duelWinnerName) duelUI.duelWinnerName.textContent = `${hostName.toUpperCase()} WINS THE BATTLE! 👑`;
+    triggerConfetti();
+  } else if (guestScore > hostScore) {
+    if (duelUI.duelWinnerName) duelUI.duelWinnerName.textContent = `${guestName.toUpperCase()} WINS THE BATTLE! 👑`;
+    triggerConfetti();
+  } else {
+    if (duelUI.duelWinnerName) duelUI.duelWinnerName.textContent = "IT'S A DRAW BATTLE! 🤝";
+  }
+}
+
+async function startOnlineBattle() {
+  if (!state.online.roomId || !state.online.token) return;
+  if (!state.online.isHost) return;
+
+  if (duelUI.btnLobbyStart) duelUI.btnLobbyStart.disabled = true;
+  try {
+    const res = await fetch(`/api/room/${state.online.roomId}/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: state.online.token,
+        total_rounds: 5
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      handleRoomUpdate(data.room, "host");
+    } else {
+      alert(data.error || "Could not start battle.");
+    }
+  } catch (err) {
+    alert("Error starting battle: " + err.message);
+  } finally {
+    if (duelUI.btnLobbyStart) duelUI.btnLobbyStart.disabled = false;
+  }
+}
+
+async function buzzOnline() {
+  if (state.mode !== "duel-online") return;
+  if (!state.online.roomId || !state.online.token) return;
+
+  try {
+    const res = await fetch(`/api/room/${state.online.roomId}/buzz`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: state.online.token })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      playSFX("click");
+      handleRoomUpdate(data.room, state.online.role);
+    } else {
+      showFeedback(data.error || "Buzzer locked!");
+    }
+  } catch (err) {
+    showFeedback("Network error buzzing: " + err.message);
+  }
+}
+
+async function submitOnlineGuess(guessText) {
+  if (!state.online.roomId || !state.online.token) return;
+  if (!guessText) return;
+
+  try {
+    const res = await fetch(`/api/room/${state.online.roomId}/guess`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: state.online.token,
+        guess: guessText
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showFeedback(data.error || "Could not submit guess.");
+      return;
+    }
+
+    if (data.correct) {
+      playSFX("win");
+      handleRoomUpdate(data.room, state.online.role);
+    } else {
+      playSFX("wrong");
+      showFeedback(data.message || "❌ Incorrect guess! Buzzer released.");
+      handleRoomUpdate(data.room, state.online.role);
+    }
+  } catch (err) {
+    showFeedback("Network error submitting guess: " + err.message);
+  }
+}
+
+async function skipOnlineRound() {
+  if (!state.online.roomId || !state.online.token) return;
+  try {
+    const res = await fetch(`/api/room/${state.online.roomId}/skip`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: state.online.token })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      handleRoomUpdate(data.room, state.online.role);
+    }
+  } catch (err) {}
+}
+
+async function advanceOnlineRound() {
+  if (!state.online.roomId || !state.online.token) return;
+  if (!state.online.isHost) return;
+
+  try {
+    const res = await fetch(`/api/room/${state.online.roomId}/next`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: state.online.token })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      handleRoomUpdate(data.room, "host");
+    }
+  } catch (err) {
+    alert("Could not advance round: " + err.message);
+  }
+}
+
+function copyRoomCode() {
+  if (!state.online.roomId) return;
+  navigator.clipboard.writeText(state.online.roomId).then(() => {
+    if (duelUI.btnCopyCode) {
+      const origHtml = duelUI.btnCopyCode.innerHTML;
+      duelUI.btnCopyCode.innerHTML = '<i class="fa-solid fa-check"></i> <span>COPIED!</span>';
+      setTimeout(() => { duelUI.btnCopyCode.innerHTML = origHtml; }, 2000);
+    }
+  }).catch(() => {});
+}
+
+function copyRoomLink() {
+  if (!state.online.roomId) return;
+  const url = `${window.location.origin}${window.location.pathname}?room=${state.online.roomId}`;
+  navigator.clipboard.writeText(url).then(() => {
+    if (duelUI.btnCopyRoomLink) {
+      const origHtml = duelUI.btnCopyRoomLink.innerHTML;
+      duelUI.btnCopyRoomLink.innerHTML = '<i class="fa-solid fa-check"></i> <span>LINK COPIED!</span>';
+      setTimeout(() => { duelUI.btnCopyRoomLink.innerHTML = origHtml; }, 2000);
+    }
+  }).catch(() => {});
+}
+
+function shareRoomWhatsApp() {
+  if (!state.online.roomId) return;
+  const url = `${window.location.origin}${window.location.pathname}?room=${state.online.roomId}`;
+  const text = `Join my BeatDrop 1v1 Music Duel! 🎵🔥\n\nRoom Code: ${state.online.roomId}\nTap to join directly:\n${url}`;
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank");
+}
+
+async function leaveOnlineRoom(notifyServer = true) {
+  stopRoomPolling();
+  if (notifyServer && state.online.roomId && state.online.token) {
+    try {
+      await fetch(`/api/room/${state.online.roomId}/leave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: state.online.token })
+      });
+    } catch (e) {}
+  }
+
+  state.online.roomId = null;
+  state.online.token = null;
+  state.online.role = null;
+  state.online.isHost = false;
+  state.online.lastRound = 0;
+
+  window.history.replaceState({}, "", window.location.pathname);
+
+  if (duelUI.activeLobby) duelUI.activeLobby.style.display = "none";
+  if (duelUI.prejoinView) duelUI.prejoinView.style.display = "block";
+  showOnlineStatus("");
+
+  stopSnippetPlayback();
+  showScreen("setup");
+}
+
 async function handlePaste() {
   try {
     const text = await navigator.clipboard.readText();
@@ -669,16 +1277,28 @@ function showScreen(screenName) {
     screens.setup.classList.add("active");
     nav.stats.style.display = "none";
     if (duelNav.container) duelNav.container.style.display = "none";
+    if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "none";
+    if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "none";
   } else {
     screens.game.classList.add("active");
     if (state.mode === "duel-local") {
       nav.stats.style.display = "none";
       if (duelNav.container) duelNav.container.style.display = "flex";
       if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "flex";
+      if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "none";
+      if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "none";
+    } else if (state.mode === "duel-online") {
+      nav.stats.style.display = "none";
+      if (duelNav.container) duelNav.container.style.display = "none";
+      if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "none";
+      if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "flex";
+      if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "block";
     } else {
       nav.stats.style.display = "flex";
       if (duelNav.container) duelNav.container.style.display = "none";
       if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "none";
+      if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "none";
+      if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "none";
     }
   }
 }
@@ -1163,6 +1783,21 @@ function updateHighlightedItem(items) {
 // ============================================================
 
 function submitGuess() {
+  if (state.mode === "duel-online") {
+    let guessVal = "";
+    if (state.selectedSuggestion) {
+      guessVal = `${state.selectedSuggestion.title} ${state.selectedSuggestion.artist || ""}`;
+    } else {
+      guessVal = gameUI.guessInput.value.trim();
+    }
+    if (!guessVal) {
+      showFeedback("Please type or select a song before submitting!");
+      return;
+    }
+    submitOnlineGuess(guessVal);
+    return;
+  }
+
   if (!state.selectedSuggestion) {
     showFeedback("Please select a track from the suggestions dropdown.");
     return;
@@ -1244,6 +1879,11 @@ function handleWrongGuess() {
 }
 
 function skipToNextLevel() {
+  if (state.mode === "duel-online") {
+    skipOnlineRound();
+    return;
+  }
+
   stopSnippetPlayback();
 
   if (state.currentLevelIndex < LEVELS.length - 1) {
@@ -1259,6 +1899,11 @@ function skipToNextLevel() {
 }
 
 function giveUpCurrentSong() {
+  if (state.mode === "duel-online") {
+    skipOnlineRound();
+    return;
+  }
+
   stopSnippetPlayback();
   handleMissedRound();
 }
@@ -1356,6 +2001,11 @@ function toggleFullTrackPlayback() {
 }
 
 function nextRound() {
+  if (state.mode === "duel-online") {
+    advanceOnlineRound();
+    return;
+  }
+
   if (isPlayerReady && ytPlayer) {
     try { ytPlayer.pauseVideo(); } catch (e) {}
   }
@@ -1459,6 +2109,10 @@ function copyShareScore() {
 
 function restartGame() {
   modalSummary.overlay.style.display = "none";
+  if (state.mode === "duel-online") {
+    leaveOnlineRoom(false);
+    return;
+  }
   startNewGame();
 }
 

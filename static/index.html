@@ -179,29 +179,108 @@
           <div id="duel-online-config" class="duel-config-bay" style="display: none;">
             <div class="duel-bay-title">
               <i class="fa-solid fa-satellite-dish"></i>
-              <span>ONLINE MULTIPLAYER ROOM (BETA PREVIEW)</span>
+              <span>ONLINE MULTIPLAYER ROOM (LIVE 2-PLAYER)</span>
             </div>
             <p class="duel-bay-desc">
-              Play across two phones or laptops! Create a private room or enter a friend's room code.
+              Play across two phones anywhere in the world! Create a private room or enter a room code.
             </p>
-            <div class="online-room-actions">
-              <div class="room-action-block">
-                <span class="room-block-label">CREATE PRIVATE ROOM</span>
-                <button id="btn-create-room" class="btn-room-action primary">
-                  <i class="fa-solid fa-plus"></i> CREATE ROOM & GET LINK
-                </button>
+
+            <!-- Pre-join setup: Player name + Create or Join -->
+            <div id="online-prejoin-view">
+              <div class="online-player-name-row">
+                <span class="room-block-label">YOUR CALLSIGN / NAME</span>
+                <input type="text" id="input-online-player-name" placeholder="Enter your DJ name..." maxlength="16" value="Player 1">
               </div>
-              <div class="room-action-divider"><span>OR</span></div>
-              <div class="room-action-block">
-                <span class="room-block-label">JOIN EXISTING ROOM</span>
-                <div class="room-join-row">
-                  <input type="text" id="input-room-code" placeholder="ENTER 6-DIGIT CODE (e.g. DHH-77)" maxlength="8">
-                  <button id="btn-join-room" class="btn-room-action secondary">
-                    <i class="fa-solid fa-arrow-right"></i> JOIN
+
+              <div class="online-room-actions">
+                <div class="room-action-block">
+                  <span class="room-block-label">HOST NEW BATTLE</span>
+                  <button id="btn-create-room" class="btn-room-action primary">
+                    <i class="fa-solid fa-plus"></i> CREATE ROOM & GET CODE
+                  </button>
+                </div>
+                <div class="room-action-divider"><span>OR</span></div>
+                <div class="room-action-block">
+                  <span class="room-block-label">JOIN EXISTING ROOM</span>
+                  <div class="room-join-row">
+                    <input type="text" id="input-room-code" placeholder="ENTER CODE (e.g. DHH42)" maxlength="8">
+                    <button id="btn-join-room" class="btn-room-action secondary">
+                      <i class="fa-solid fa-arrow-right"></i> JOIN
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="online-status-cue" class="online-status-box" style="display: none;"></div>
+            </div>
+
+            <!-- Active Room Lobby (Visible after creating or joining) -->
+            <div id="online-active-lobby" class="online-lobby-deck" style="display: none;">
+              <div class="lobby-code-badge-housing">
+                <span class="lobby-label-sub">ACTIVE ROOM CODE</span>
+                <div class="lobby-code-display">
+                  <strong id="lobby-code-text">DHH00</strong>
+                  <button id="btn-copy-code" class="btn-copy-pill" title="Copy Room Code">
+                    <i class="fa-regular fa-copy"></i>
+                    <span>COPY CODE</span>
                   </button>
                 </div>
               </div>
+
+              <!-- Share Action Bar -->
+              <div class="lobby-share-strip">
+                <button id="btn-copy-room-link" class="btn-share-action copy">
+                  <i class="fa-solid fa-link"></i>
+                  <span>COPY INVITE LINK</span>
+                </button>
+                <button id="btn-whatsapp-room-link" class="btn-share-action whatsapp">
+                  <i class="fa-brands fa-whatsapp"></i>
+                  <span>SHARE ON WHATSAPP</span>
+                </button>
+              </div>
+
+              <!-- Live Connected Players Status -->
+              <div class="lobby-roster-bay">
+                <div class="roster-card host-roster" id="roster-card-host">
+                  <div class="roster-avatar">👑</div>
+                  <div class="roster-meta">
+                    <strong id="lobby-host-name">Host</strong>
+                    <span class="roster-status connected">🟢 Host (Connected)</span>
+                  </div>
+                </div>
+                <div class="roster-vs-badge">VS</div>
+                <div class="roster-card guest-roster" id="roster-card-guest">
+                  <div class="roster-avatar" id="lobby-guest-avatar">⚔️</div>
+                  <div class="roster-meta">
+                    <strong id="lobby-guest-name">Waiting for Player 2...</strong>
+                    <span class="roster-status waiting" id="lobby-guest-status">⏳ Share code/link to battle</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Playlist Info -->
+              <div class="lobby-deck-info">
+                <i class="fa-solid fa-compact-disc"></i>
+                <span>BATTLE DECK: <strong id="lobby-deck-title">👑 Desi Hip Hop (DHH) Anthems</strong></span>
+              </div>
+
+              <!-- Host Controls / Guest Waiting Banner -->
+              <div class="lobby-action-dock">
+                <button id="btn-lobby-start" class="btn-studio-launch" style="display: none;">
+                  <i class="fa-solid fa-bolt"></i>
+                  <span>START 1V1 BATTLE</span>
+                </button>
+                <div id="lobby-guest-banner" class="guest-waiting-cue" style="display: none;">
+                  <div class="cue-spinner"></div>
+                  <span>WAITING FOR HOST TO LAUNCH BATTLE...</span>
+                </div>
+                <button id="btn-leave-room" class="btn-leave-lobby">
+                  <i class="fa-solid fa-arrow-left"></i>
+                  <span>LEAVE ROOM</span>
+                </button>
+              </div>
             </div>
+
           </div>
 
           <!-- Platform Compatibility Deck -->
@@ -324,6 +403,27 @@
             <div class="deck-capacity-badge" id="playlist-count-badge">50 TRACKS</div>
           </div>
 
+          <!-- Online 1v1 Battle HUD (Visible only in duel-online mode) -->
+          <div id="online-match-strip" class="online-match-hud" style="display: none;">
+            <div class="hud-player-box host-side" id="hud-host-box">
+              <span class="hud-role-tag">👑 HOST</span>
+              <strong class="hud-player-name" id="online-hud-host-name">Host</strong>
+              <span class="hud-score-badge" id="online-hud-host-score">0 PTS</span>
+            </div>
+            <div class="hud-match-telemetry">
+              <span class="hud-round-indicator" id="online-hud-round">ROUND 1 / 5</span>
+              <div class="hud-countdown-meter" id="online-buzzer-countdown" style="display: none;">
+                <i class="fa-solid fa-stopwatch"></i>
+                <span id="online-timer-seconds">10s</span>
+              </div>
+            </div>
+            <div class="hud-player-box guest-side" id="hud-guest-box">
+              <span class="hud-role-tag">⚔️ GUEST</span>
+              <strong class="hud-player-name" id="online-hud-guest-name">Guest</strong>
+              <span class="hud-score-badge" id="online-hud-guest-score">0 PTS</span>
+            </div>
+          </div>
+
           <!-- Centerpiece: Compact Turntable Deck + Stereo Peak Meters -->
           <div class="compact-hardware-stage">
             
@@ -425,6 +525,20 @@
               <div class="buzzer-glow"></div>
               <span class="buzzer-key-badge"><kbd>L</kbd> BUZZ</span>
               <strong class="buzzer-player-label" id="label-p2-buzzer">PLAYER 2</strong>
+            </button>
+          </div>
+
+          <!-- Online Mobile Buzzer Deck (Visible only in duel-online mode) -->
+          <div id="online-buzzer-bay" class="online-buzzer-container" style="display: none;">
+            <button id="btn-online-buzzer" class="btn-online-buzzer">
+              <div class="online-buzzer-glow"></div>
+              <div class="online-buzzer-inner">
+                <i class="fa-solid fa-bolt buzzer-bolt-icon"></i>
+                <div class="buzzer-text-stack">
+                  <strong class="buzzer-main-label" id="online-buzzer-label">⚡ BUZZ IN TO GUESS!</strong>
+                  <span class="buzzer-sub-label" id="online-buzzer-subtext">Freezes music & unlocks 10s guess window</span>
+                </div>
+              </div>
             </button>
           </div>
 
