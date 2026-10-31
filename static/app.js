@@ -403,6 +403,24 @@ const modalSummary = {
   btnPlayAgain: document.getElementById("btn-play-again")
 };
 
+const modalHistory = {
+  overlay: document.getElementById("modal-history"),
+  totalScore: document.getElementById("career-total-score"),
+  accuracy: document.getElementById("career-accuracy"),
+  bestStreak: document.getElementById("career-best-streak"),
+  madnessCount: document.getElementById("career-madness-count"),
+  historyList: document.getElementById("career-history-list"),
+  btnClose: document.getElementById("btn-close-history"),
+  btnClearLog: document.getElementById("btn-clear-history-log"),
+  btnOpenHistory: document.getElementById("btn-open-history")
+};
+
+const savedDecksUI = {
+  section: document.getElementById("recent-decks-section"),
+  container: document.getElementById("recent-playlists-container"),
+  btnClear: document.getElementById("btn-clear-recent-decks")
+};
+
 // ============================================================
 // AUDIO VISUALIZER & DUAL VU METERS
 // ============================================================
@@ -478,6 +496,7 @@ function stopVisualizer() {
 document.addEventListener("DOMContentLoaded", () => {
   setupVisualizerBars();
   loadPresets();
+  initSavedDecksAndHistory();
   attachEventListeners();
   initOnlineRoomParams();
 });
@@ -594,15 +613,35 @@ function attachEventListeners() {
   if (duelUI.btnLeaveRoom) duelUI.btnLeaveRoom.addEventListener("click", () => leaveOnlineRoom(true));
   if (duelUI.btnOnlineBuzzer) duelUI.btnOnlineBuzzer.addEventListener("click", buzzOnline);
 
-  const btnToggleSfx = document.getElementById("btn-toggle-sfx");
-  const sfxIcon = document.getElementById("sfx-icon");
-  if (btnToggleSfx) {
-    btnToggleSfx.addEventListener("click", () => {
-      sfxEnabled = !sfxEnabled;
-      sfxIcon.className = sfxEnabled ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark";
-      btnToggleSfx.title = sfxEnabled ? "Mute Sound Effects" : "Enable Sound Effects";
+  // Career stats & History modal handlers
+  if (modalHistory.btnOpenHistory) {
+    modalHistory.btnOpenHistory.addEventListener("click", openCareerHistoryModal);
+  }
+  if (modalHistory.btnClose) {
+    modalHistory.btnClose.addEventListener("click", closeCareerHistoryModal);
+  }
+  if (modalHistory.overlay) {
+    modalHistory.overlay.addEventListener("click", (e) => {
+      if (e.target === modalHistory.overlay) closeCareerHistoryModal();
     });
   }
+  if (modalHistory.btnClearLog) {
+    modalHistory.btnClearLog.addEventListener("click", clearCareerHistory);
+  }
+
+  // Saved Decks handlers
+  if (savedDecksUI.btnClear) {
+    savedDecksUI.btnClear.addEventListener("click", clearAllSavedPlaylists);
+  }
+
+  // Close modals on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (modalHistory.overlay && modalHistory.overlay.style.display === "flex") {
+        closeCareerHistoryModal();
+      }
+    }
+  });
 
   gameUI.btnPlaySnippet.addEventListener("click", toggleSnippetPlayback);
 
@@ -1022,6 +1061,23 @@ function showOnlineTrackReveal(room, role) {
   const result = room.round_result || {};
   modalReveal.overlay.style.display = "flex";
 
+  const amIWinner = (result.winner === role);
+
+  // Record this track into career stats if not already recorded this round
+  if (state.online.lastRecordedRound !== room.round) {
+    state.online.lastRecordedRound = room.round;
+    recordSongHistory(
+      amIWinner,
+      amIWinner ? 1000 : 0,
+      `Round ${room.round}`,
+      {
+        title: result.song_title || "Unknown Track",
+        artist: result.artist_name || "Unknown Artist",
+        thumbnail: result.thumbnail || ""
+      }
+    );
+  }
+
   if (modalReveal.thumb) modalReveal.thumb.src = result.thumbnail || "";
   if (modalReveal.songTitle) modalReveal.songTitle.textContent = result.song_title || "Unknown Song";
   if (modalReveal.artistName) modalReveal.artistName.textContent = result.artist_name || "Unknown Artist";
@@ -1030,7 +1086,6 @@ function showOnlineTrackReveal(room, role) {
     modalReveal.ytLink.href = `https://www.youtube.com/watch?v=${result.videoId}`;
   }
 
-  const amIWinner = (result.winner === role);
   if (amIWinner) {
     playSFX("win");
     if (modalReveal.badge) modalReveal.badge.innerHTML = '<i class="fa-solid fa-trophy"></i> ROUND WON!';
@@ -1336,6 +1391,15 @@ async function handleLoadPlaylist() {
     state.platformBadge = data.platformBadge || "PLAYLIST";
     state.tracks = [...data.tracks];
     state.useRandomHook = setupUI.toggleRandomHook.checked;
+
+    // Persist this playlist to Saved Decks & remember last URL
+    saveRecentPlaylist({
+      url: url,
+      title: data.title || "Custom Playlist",
+      platform: data.platform || "youtube",
+      platformBadge: data.platformBadge || "PLAYLIST",
+      trackCount: data.tracks ? data.tracks.length : 0
+    });
 
     startNewGame();
   } catch (err) {
@@ -1961,6 +2025,9 @@ function showRevealModal(won, pointsEarned, timeTaken) {
   modalReveal.timeTaken.textContent = timeTaken;
   modalReveal.streakVal.textContent = `🔥 ${state.currentStreak}`;
 
+  // Record into persistent Career Stats & Song History
+  recordSongHistory(won, pointsEarned, timeTaken, state.currentSong);
+
   if (won) {
     modalReveal.badge.className = "status-stamp win";
     modalReveal.badge.innerHTML = `<i class="fa-solid fa-trophy"></i> TRACK IDENTIFIED`;
@@ -2161,4 +2228,299 @@ function triggerConfetti() {
     origin: { y: 0.65 },
     colors: ["#10b981", "#f59e0b", "#f43f5e", "#6366f1", "#ffffff"]
   });
+}
+
+// ============================================================
+// PERSISTENT SAVED DECKS & CAREER STATS LOGIC
+// ============================================================
+
+const STORAGE_KEYS = {
+  RECENT_PLAYLISTS: "beatdrop_recent_playlists",
+  LAST_URL: "beatdrop_last_url",
+  CAREER_STATS: "beatdrop_career_stats"
+};
+
+function safeGetStorage(key, fallback = null) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    console.warn(`localStorage read error for ${key}:`, e);
+    return fallback;
+  }
+}
+
+function safeSetStorage(key, val) {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {
+    console.warn(`localStorage write error for ${key}:`, e);
+  }
+}
+
+function initSavedDecksAndHistory() {
+  try {
+    const lastUrl = localStorage.getItem(STORAGE_KEYS.LAST_URL);
+    if (lastUrl && setupUI.urlInput && !setupUI.urlInput.value) {
+      setupUI.urlInput.value = lastUrl;
+    }
+  } catch (e) {}
+
+  renderSavedPlaylists();
+}
+
+function getSavedPlaylists() {
+  const list = safeGetStorage(STORAGE_KEYS.RECENT_PLAYLISTS, []);
+  return Array.isArray(list) ? list : [];
+}
+
+function saveRecentPlaylist(deck) {
+  if (!deck || !deck.url) return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_URL, deck.url);
+  } catch (e) {}
+
+  let list = getSavedPlaylists();
+  // Remove existing match by URL or title
+  list = list.filter(item => item.url !== deck.url && item.title !== deck.title);
+  // Prepend fresh deck
+  list.unshift({
+    url: deck.url,
+    title: deck.title || "Custom Deck",
+    platform: deck.platform || "youtube",
+    platformBadge: deck.platformBadge || "PLAYLIST",
+    trackCount: deck.trackCount || 0,
+    savedAt: Date.now()
+  });
+  // Cap to top 6 decks
+  if (list.length > 6) {
+    list = list.slice(0, 6);
+  }
+  safeSetStorage(STORAGE_KEYS.RECENT_PLAYLISTS, list);
+  renderSavedPlaylists();
+}
+
+function removeSavedPlaylist(url) {
+  let list = getSavedPlaylists();
+  list = list.filter(item => item.url !== url);
+  safeSetStorage(STORAGE_KEYS.RECENT_PLAYLISTS, list);
+  renderSavedPlaylists();
+}
+
+function clearAllSavedPlaylists() {
+  if (confirm("Are you sure you want to clear all your saved playlists?")) {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.RECENT_PLAYLISTS);
+    } catch (e) {}
+    renderSavedPlaylists();
+  }
+}
+
+function renderSavedPlaylists() {
+  if (!savedDecksUI.section || !savedDecksUI.container) return;
+  const list = getSavedPlaylists();
+
+  if (list.length === 0) {
+    savedDecksUI.section.style.display = "none";
+    savedDecksUI.container.innerHTML = "";
+    return;
+  }
+
+  savedDecksUI.section.style.display = "block";
+  savedDecksUI.container.innerHTML = "";
+
+  list.forEach(deck => {
+    const card = document.createElement("div");
+    card.className = "recent-deck-card";
+
+    let iconHtml = '<i class="fa-brands fa-youtube"></i> YOUTUBE';
+    let pClass = "youtube";
+    if (deck.platform === "spotify") {
+      iconHtml = '<i class="fa-brands fa-spotify"></i> SPOTIFY';
+      pClass = "spotify";
+    } else if (deck.platform === "apple") {
+      iconHtml = '<i class="fa-brands fa-apple"></i> APPLE MUSIC';
+      pClass = "apple";
+    }
+
+    card.innerHTML = `
+      <div class="recent-card-top">
+        <span class="recent-platform-badge ${pClass}">${iconHtml}</span>
+        <button class="recent-delete-btn" title="Remove deck from saved list">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+      <div class="recent-title" title="${escapeHtml(deck.title)}">${escapeHtml(deck.title)}</div>
+      <div class="recent-card-footer">
+        <span class="recent-track-count">${deck.trackCount} TRACKS</span>
+        <button class="btn-launch-recent">
+          <i class="fa-solid fa-play"></i> <span>PLAY DECK</span>
+        </button>
+      </div>
+    `;
+
+    // Launch handlers
+    const launchBtn = card.querySelector(".btn-launch-recent");
+    const launchHandler = (e) => {
+      e.stopPropagation();
+      setupUI.urlInput.value = deck.url;
+      handleLoadPlaylist();
+    };
+    if (launchBtn) launchBtn.addEventListener("click", launchHandler);
+    card.addEventListener("click", (e) => {
+      if (!e.target.closest(".recent-delete-btn")) {
+        launchHandler(e);
+      }
+    });
+
+    // Delete button
+    const delBtn = card.querySelector(".recent-delete-btn");
+    if (delBtn) {
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeSavedPlaylist(deck.url);
+      });
+    }
+
+    savedDecksUI.container.appendChild(card);
+  });
+}
+
+// ------------------------------------------------------------
+// CAREER TELEMETRY & PLAYED TRACK LOG
+// ------------------------------------------------------------
+
+function getCareerStats() {
+  const fallback = {
+    totalScore: 0,
+    songsAttempted: 0,
+    songsIdentified: 0,
+    bestStreak: 0,
+    madness01s: 0,
+    history: []
+  };
+  const stats = safeGetStorage(STORAGE_KEYS.CAREER_STATS, fallback);
+  return {
+    totalScore: stats.totalScore || 0,
+    songsAttempted: stats.songsAttempted || 0,
+    songsIdentified: stats.songsIdentified || 0,
+    bestStreak: stats.bestStreak || 0,
+    madness01s: stats.madness01s || 0,
+    history: Array.isArray(stats.history) ? stats.history : []
+  };
+}
+
+function recordSongHistory(won, pointsEarned, durationLabel, songData) {
+  const stats = getCareerStats();
+  const track = songData || state.currentSong;
+
+  stats.songsAttempted += 1;
+  if (won) {
+    stats.totalScore += (pointsEarned || 0);
+    stats.songsIdentified += 1;
+    if (durationLabel === "0.1s") {
+      stats.madness01s += 1;
+    }
+    stats.bestStreak = Math.max(stats.bestStreak || 0, state.currentStreak || 0);
+  }
+
+  const historyEntry = {
+    title: (track && track.title) ? track.title : "Mystery Song",
+    artist: (track && track.artist) ? track.artist : "Mystery Artist",
+    thumbnail: (track && track.thumbnail) ? track.thumbnail : "",
+    won: !!won,
+    duration: durationLabel || (won ? "Win" : "Missed"),
+    points: pointsEarned || 0,
+    timestamp: Date.now()
+  };
+
+  stats.history.unshift(historyEntry);
+  if (stats.history.length > 50) {
+    stats.history = stats.history.slice(0, 50);
+  }
+
+  safeSetStorage(STORAGE_KEYS.CAREER_STATS, stats);
+}
+
+function openCareerHistoryModal() {
+  renderCareerStatsModal();
+  if (modalHistory.overlay) {
+    modalHistory.overlay.style.display = "flex";
+  }
+}
+
+function closeCareerHistoryModal() {
+  if (modalHistory.overlay) {
+    modalHistory.overlay.style.display = "none";
+  }
+}
+
+function clearCareerHistory() {
+  if (confirm("Reset all career stats and clear played track history?")) {
+    const blank = {
+      totalScore: 0,
+      songsAttempted: 0,
+      songsIdentified: 0,
+      bestStreak: 0,
+      madness01s: 0,
+      history: []
+    };
+    safeSetStorage(STORAGE_KEYS.CAREER_STATS, blank);
+    renderCareerStatsModal();
+  }
+}
+
+function renderCareerStatsModal() {
+  const stats = getCareerStats();
+  if (modalHistory.totalScore) {
+    modalHistory.totalScore.textContent = stats.totalScore.toLocaleString();
+  }
+  if (modalHistory.accuracy) {
+    const pct = stats.songsAttempted > 0
+      ? Math.round((stats.songsIdentified / stats.songsAttempted) * 100)
+      : 0;
+    modalHistory.accuracy.textContent = `${pct}%`;
+  }
+  if (modalHistory.bestStreak) {
+    modalHistory.bestStreak.textContent = stats.bestStreak;
+  }
+  if (modalHistory.madnessCount) {
+    modalHistory.madnessCount.textContent = stats.madness01s;
+  }
+
+  if (modalHistory.historyList) {
+    if (stats.history.length === 0) {
+      modalHistory.historyList.innerHTML = `
+        <div class="history-empty-note">
+          <i class="fa-solid fa-compact-disc fa-spin" style="margin-right: 6px;"></i>
+          No tracks recorded yet. Play a round to start your career log!
+        </div>
+      `;
+      return;
+    }
+
+    modalHistory.historyList.innerHTML = stats.history.map(item => {
+      const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><rect width='40' height='40' fill='%2312151e'/><text x='20' y='25' fill='%23666' font-size='14' text-anchor='middle'>♫</text></svg>";
+      const thumb = item.thumbnail || fallbackSvg;
+      const resultClass = item.won ? "won" : "missed";
+      const resultText = item.won ? (item.duration ? item.duration : "WIN") : "MISSED";
+      const ptsText = item.won ? `+${(item.points || 0).toLocaleString()} PTS` : "0 PTS";
+
+      return `
+        <div class="history-row-card">
+          <div class="history-row-left">
+            <img class="history-thumb" src="${escapeHtml(thumb)}" alt="Art" onerror="this.src='${fallbackSvg}'"/>
+            <div class="history-meta">
+              <span class="history-song-name" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</span>
+              <span class="history-artist-name" title="${escapeHtml(item.artist)}">${escapeHtml(item.artist)}</span>
+            </div>
+          </div>
+          <div class="history-row-right">
+            <span class="history-pill-result ${resultClass}">${resultText}</span>
+            <span class="history-points-badge">${ptsText}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
 }

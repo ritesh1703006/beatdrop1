@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=0.1s">
+  <link rel="stylesheet" href="style.css?v=history2.2">
 </head>
 <body>
   <!-- Ambient Atmospheric Lighting -->
@@ -59,9 +59,9 @@
           <span class="telemetry-label" id="audio-status-text">AUDIO READY</span>
         </div>
 
-        <!-- Master Sound FX Toggle -->
-        <button id="btn-toggle-sfx" class="btn-console-icon" title="Toggle Sound Effects">
-          <i class="fa-solid fa-volume-high" id="sfx-icon"></i>
+        <!-- Career Stats & History Button -->
+        <button id="btn-open-history" class="btn-console-icon history-btn" title="View Career Stats & History">
+          <i class="fa-solid fa-clock-rotate-left"></i>
         </button>
 
         <!-- In-Game Stats Cluster (Solo Mode) -->
@@ -356,6 +356,20 @@
               <span id="loader-message">Parsing audio catalog & preparing tracks...</span>
             </div>
             <div id="error-message" class="status-feed error" style="display: none;"></div>
+          </div>
+
+          <!-- User Saved & Recent Playlists (Persistent Deck) -->
+          <div id="recent-decks-section" class="decks-gallery recent-decks-section" style="display: none;">
+            <div class="gallery-header">
+              <div class="gallery-title-group">
+                <span class="gallery-tag recent-tag"><i class="fa-solid fa-clock-rotate-left"></i> YOUR SAVED DECKS</span>
+                <span class="gallery-desc">Playlists you've loaded — 1-click launch</span>
+              </div>
+              <button id="btn-clear-recent-decks" class="btn-clear-decks" title="Clear saved playlists">CLEAR</button>
+            </div>
+            <div class="presets-grid" id="recent-playlists-container">
+              <!-- Dynamically populated from localStorage -->
+            </div>
           </div>
 
           <!-- Curated Decks Grid -->
@@ -793,11 +807,65 @@
         </div>
       </div>
 
+      <!-- ============================================================
+           MODAL 3: CAREER STATS & SCORE HISTORY
+           ============================================================ -->
+      <div id="modal-history" class="modal-backdrop-scrim" style="display: none;">
+        <div class="modal-card-chassis history-chassis">
+          
+          <div class="summary-topline">
+            <div class="status-stamp" style="color: var(--accent-gold); border-color: rgba(255,183,3,0.3);">
+              <i class="fa-solid fa-chart-line"></i> CAREER TELEMETRY
+            </div>
+            <h2 class="summary-main-heading">STATS & SONG HISTORY</h2>
+            <p class="summary-subcaption">Your all-time guessing accuracy and played tracks</p>
+          </div>
+
+          <!-- Career Overview Matrix -->
+          <div class="telemetry-stats-matrix">
+            <div class="matrix-card">
+              <strong class="matrix-number neon" id="career-total-score">0</strong>
+              <span class="matrix-title">ALL-TIME SCORE</span>
+            </div>
+            <div class="matrix-card">
+              <strong class="matrix-number" id="career-accuracy">0%</strong>
+              <span class="matrix-title">ACCURACY RATE</span>
+            </div>
+            <div class="matrix-card">
+              <strong class="matrix-number flame" id="career-best-streak">0</strong>
+              <span class="matrix-title">BEST STREAK 🔥</span>
+            </div>
+            <div class="matrix-card">
+              <strong class="matrix-number neon" id="career-madness-count">0</strong>
+              <span class="matrix-title">0.1s GUESSES ⚡</span>
+            </div>
+          </div>
+
+          <!-- Recent Song History Feed -->
+          <div class="history-feed-housing">
+            <div class="history-feed-header">
+              <span class="history-feed-label"><i class="fa-solid fa-list-ol"></i> RECENTLY PLAYED TRACKS</span>
+              <button id="btn-clear-history-log" class="btn-clear-decks">CLEAR</button>
+            </div>
+            <div class="history-feed-list" id="career-history-list">
+              <!-- Dynamically populated from localStorage -->
+            </div>
+          </div>
+
+          <div class="modal-action-footer">
+            <button id="btn-close-history" class="btn-submit-attempt btn-full-width">
+              <span>CLOSE</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
     </main>
   </div>
 
   <!-- Application Engine -->
-  <script src="app.js?v=0.1s"></script>
+  <script src="app.js?v=history2.2"></script>
   <!-- YouTube IFrame API -->
   <script src="https://www.youtube.com/iframe_api"></script>
 </body>
