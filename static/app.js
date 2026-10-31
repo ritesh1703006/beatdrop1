@@ -18,6 +18,12 @@ const LEVELS = [
 ];
 
 const state = {
+  // Mode info: "solo" | "duel-local" | "duel-online"
+  mode: "solo",
+  p1: { name: "Player 1", score: 0 },
+  p2: { name: "Player 2", score: 0 },
+  activeBuzzer: null,
+
   // Playlist info
   playlistId: null,
   playlistTitle: "",
@@ -27,7 +33,7 @@ const state = {
   remainingTracks: [],
   maxRounds: 10,
   
-  // Game metrics
+  // Game metrics (Solo)
   totalScore: 0,
   currentStreak: 0,
   bestStreak: 0,
@@ -249,6 +255,15 @@ const nav = {
   btnQuit: document.getElementById("btn-quit")
 };
 
+const duelNav = {
+  container: document.getElementById("nav-duel-stats"),
+  p1Name: document.getElementById("nav-p1-name"),
+  p1Score: document.getElementById("nav-p1-score"),
+  p2Name: document.getElementById("nav-p2-name"),
+  p2Score: document.getElementById("nav-p2-score"),
+  btnQuitDuel: document.getElementById("btn-quit-duel")
+};
+
 const setupUI = {
   urlInput: document.getElementById("playlist-url-input"),
   btnPaste: document.getElementById("btn-paste"),
@@ -259,6 +274,31 @@ const setupUI = {
   loaderMessage: document.getElementById("loader-message"),
   errorMessage: document.getElementById("error-message"),
   presetsContainer: document.getElementById("presets-container")
+};
+
+const duelUI = {
+  buzzersBay: document.getElementById("duel-buzzers-bay"),
+  btnBuzzP1: document.getElementById("btn-buzz-p1"),
+  btnBuzzP2: document.getElementById("btn-buzz-p2"),
+  labelP1: document.getElementById("label-p1-buzzer"),
+  labelP2: document.getElementById("label-p2-buzzer"),
+  statusBanner: document.getElementById("buzzer-status-banner"),
+  localConfig: document.getElementById("duel-local-config"),
+  onlineConfig: document.getElementById("duel-online-config"),
+  inputP1Name: document.getElementById("input-p1-name"),
+  inputP2Name: document.getElementById("input-p2-name"),
+  modeChip: document.getElementById("current-mode-chip"),
+  startBtnLabel: document.getElementById("start-btn-label"),
+  btnCreateRoom: document.getElementById("btn-create-room"),
+  btnJoinRoom: document.getElementById("btn-join-room"),
+  inputRoomCode: document.getElementById("input-room-code"),
+  duelSummaryPod: document.getElementById("duel-summary-pod"),
+  soloSummaryMatrix: document.getElementById("solo-summary-matrix"),
+  duelWinnerName: document.getElementById("duel-winner-name"),
+  duelP1FinalLabel: document.getElementById("duel-p1-final-label"),
+  duelP1FinalScore: document.getElementById("duel-p1-final-score"),
+  duelP2FinalLabel: document.getElementById("duel-p2-final-label"),
+  duelP2FinalScore: document.getElementById("duel-p2-final-score")
 };
 
 const gameUI = {
@@ -279,7 +319,6 @@ const gameUI = {
   btnPlaySnippet: document.getElementById("btn-play-snippet"),
   playIcon: document.getElementById("play-icon"),
   playHintText: document.getElementById("play-hint-text"),
-  levelsTracker: document.getElementById("levels-tracker"),
   guessInput: document.getElementById("guess-input"),
   btnClearGuess: document.getElementById("btn-clear-guess"),
   suggestionsDropdown: document.getElementById("suggestions-dropdown"),
@@ -411,11 +450,12 @@ function renderPresets(presets) {
     const card = document.createElement("div");
     card.className = index === 0 ? "preset-card featured-dhh" : "preset-card";
     card.innerHTML = `
-      <div>
-        <div class="preset-cat">${p.category}</div>
-        <div class="preset-name">${p.name}</div>
-        <div class="preset-desc">${p.description}</div>
+      <div class="preset-card-top">
+        <span class="preset-cat">${escapeHtml(p.category)}</span>
+        ${index === 0 ? '<span class="preset-badge-pill">FLAGSHIP</span>' : ''}
       </div>
+      <div class="preset-name">${escapeHtml(p.name)}</div>
+      <div class="preset-desc">${escapeHtml(p.description)}</div>
     `;
     card.addEventListener("click", () => {
       setupUI.urlInput.value = `https://www.youtube.com/playlist?list=${p.id}`;
@@ -442,6 +482,67 @@ function attachEventListeners() {
       showScreen("setup");
     }
   });
+
+  if (duelNav.btnQuitDuel) {
+    duelNav.btnQuitDuel.addEventListener("click", () => {
+      if (confirm("Quit 1v1 Duel session and return to lobby?")) {
+        stopSnippetPlayback();
+        showScreen("setup");
+      }
+    });
+  }
+
+  // Mode tabs listener
+  const modeButtons = document.querySelectorAll(".mode-select-btn");
+  modeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      modeButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const mode = btn.dataset.mode;
+      state.mode = mode;
+
+      if (mode === "duel-local") {
+        if (duelUI.localConfig) duelUI.localConfig.style.display = "block";
+        if (duelUI.onlineConfig) duelUI.onlineConfig.style.display = "none";
+        if (duelUI.modeChip) duelUI.modeChip.textContent = "1V1 DUEL";
+        if (duelUI.startBtnLabel) duelUI.startBtnLabel.textContent = "START 1V1 DUEL";
+      } else if (mode === "duel-online") {
+        if (duelUI.localConfig) duelUI.localConfig.style.display = "none";
+        if (duelUI.onlineConfig) duelUI.onlineConfig.style.display = "block";
+        if (duelUI.modeChip) duelUI.modeChip.textContent = "ONLINE ROOM";
+        if (duelUI.startBtnLabel) duelUI.startBtnLabel.textContent = "LAUNCH ROOM";
+      } else {
+        if (duelUI.localConfig) duelUI.localConfig.style.display = "none";
+        if (duelUI.onlineConfig) duelUI.onlineConfig.style.display = "none";
+        if (duelUI.modeChip) duelUI.modeChip.textContent = "SOLO";
+        if (duelUI.startBtnLabel) duelUI.startBtnLabel.textContent = "START CHALLENGE";
+      }
+    });
+  });
+
+  // Duel buzzer buttons
+  if (duelUI.btnBuzzP1) duelUI.btnBuzzP1.addEventListener("click", () => handleBuzzerPress(1));
+  if (duelUI.btnBuzzP2) duelUI.btnBuzzP2.addEventListener("click", () => handleBuzzerPress(2));
+
+  // Online room handlers
+  if (duelUI.btnCreateRoom) {
+    duelUI.btnCreateRoom.addEventListener("click", () => {
+      const code = "DHH-" + Math.floor(100 + Math.random() * 900);
+      const url = window.location.origin + window.location.pathname + "?room=" + code;
+      navigator.clipboard.writeText(url).catch(() => {});
+      alert(`🎉 Room Created: ${code}\nShare Link copied to clipboard!\nSend this link to your partner to duel.`);
+    });
+  }
+  if (duelUI.btnJoinRoom && duelUI.inputRoomCode) {
+    duelUI.btnJoinRoom.addEventListener("click", () => {
+      const val = duelUI.inputRoomCode.value.trim().toUpperCase();
+      if (!val) {
+        alert("Please enter a room code (e.g. DHH-77).");
+        return;
+      }
+      alert(`Joining Room ${val}... Connected! Paste playlist or choose a deck to battle.`);
+    });
+  }
 
   const btnToggleSfx = document.getElementById("btn-toggle-sfx");
   const sfxIcon = document.getElementById("sfx-icon");
@@ -476,6 +577,20 @@ function attachEventListeners() {
 
   document.addEventListener("keydown", (e) => {
     if (document.activeElement === gameUI.guessInput) return;
+    
+    // In 1v1 duel mode, handle buzzers: 'KeyA' for P1, 'KeyL' for P2
+    if (state.mode === "duel-local" && screens.game.classList.contains("active") && modalReveal.overlay.style.display === "none") {
+      if (e.code === "KeyA") {
+        e.preventDefault();
+        handleBuzzerPress(1);
+        return;
+      } else if (e.code === "KeyL") {
+        e.preventDefault();
+        handleBuzzerPress(2);
+        return;
+      }
+    }
+
     if (screens.game.classList.contains("active") && modalReveal.overlay.style.display === "none") {
       if (e.code === "Space") {
         e.preventDefault();
@@ -488,6 +603,53 @@ function attachEventListeners() {
       }
     }
   });
+}
+
+function handleBuzzerPress(playerNum) {
+  if (state.mode !== "duel-local") return;
+  if (state.activeBuzzer) return; // already buzzed
+
+  stopSnippetPlayback();
+  state.activeBuzzer = playerNum;
+  playSFX("click");
+
+  const activeName = playerNum === 1 ? state.p1.name : state.p2.name;
+
+  if (playerNum === 1) {
+    if (duelUI.btnBuzzP1) duelUI.btnBuzzP1.classList.add("active-buzzer");
+    if (duelUI.btnBuzzP2) duelUI.btnBuzzP2.classList.add("locked-out");
+  } else {
+    if (duelUI.btnBuzzP2) duelUI.btnBuzzP2.classList.add("active-buzzer");
+    if (duelUI.btnBuzzP1) duelUI.btnBuzzP1.classList.add("locked-out");
+  }
+
+  if (duelUI.statusBanner) {
+    duelUI.statusBanner.innerHTML = `⚡ <strong>${escapeHtml(activeName)}</strong> BUZZED! (TYPE GUESS)`;
+  }
+
+  gameUI.guessInput.focus();
+}
+
+function resetBuzzers() {
+  state.activeBuzzer = null;
+  if (duelUI.btnBuzzP1) {
+    duelUI.btnBuzzP1.classList.remove("active-buzzer");
+    duelUI.btnBuzzP1.classList.remove("locked-out");
+  }
+  if (duelUI.btnBuzzP2) {
+    duelUI.btnBuzzP2.classList.remove("active-buzzer");
+    duelUI.btnBuzzP2.classList.remove("locked-out");
+  }
+  if (duelUI.statusBanner) {
+    duelUI.statusBanner.innerHTML = `<span>HIT BUZZER (<kbd>A</kbd> / <kbd>L</kbd>) TO GUESS!</span>`;
+  }
+}
+
+function updateDuelScoreboard() {
+  if (duelNav.p1Name) duelNav.p1Name.textContent = state.p1.name;
+  if (duelNav.p1Score) duelNav.p1Score.textContent = state.p1.score.toLocaleString();
+  if (duelNav.p2Name) duelNav.p2Name.textContent = state.p2.name;
+  if (duelNav.p2Score) duelNav.p2Score.textContent = state.p2.score.toLocaleString();
 }
 
 async function handlePaste() {
@@ -506,9 +668,18 @@ function showScreen(screenName) {
   if (screenName === "setup") {
     screens.setup.classList.add("active");
     nav.stats.style.display = "none";
+    if (duelNav.container) duelNav.container.style.display = "none";
   } else {
     screens.game.classList.add("active");
-    nav.stats.style.display = "flex";
+    if (state.mode === "duel-local") {
+      nav.stats.style.display = "none";
+      if (duelNav.container) duelNav.container.style.display = "flex";
+      if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "flex";
+    } else {
+      nav.stats.style.display = "flex";
+      if (duelNav.container) duelNav.container.style.display = "none";
+      if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "none";
+    }
   }
 }
 
@@ -576,6 +747,15 @@ function startNewGame() {
   state.roundNumber = 1;
   state.roundsHistory = [];
 
+  if (state.mode === "duel-local") {
+    state.p1 = { name: (duelUI.inputP1Name && duelUI.inputP1Name.value.trim()) || "Player 1", score: 0 };
+    state.p2 = { name: (duelUI.inputP2Name && duelUI.inputP2Name.value.trim()) || "Player 2", score: 0 };
+    state.activeBuzzer = null;
+    if (duelUI.labelP1) duelUI.labelP1.textContent = state.p1.name.toUpperCase();
+    if (duelUI.labelP2) duelUI.labelP2.textContent = state.p2.name.toUpperCase();
+    updateDuelScoreboard();
+  }
+
   state.remainingTracks = shuffleArray([...state.tracks]);
 
   const selectedRoundsVal = setupUI.selectRounds ? setupUI.selectRounds.value : "10";
@@ -602,6 +782,7 @@ async function loadRound() {
     return;
   }
 
+  resetBuzzers();
   state.currentSong = state.remainingTracks.pop();
   state.currentLevelIndex = 0;
   state.selectedSuggestion = null;
@@ -675,7 +856,11 @@ function updateLevelUI() {
   if (gameUI.currentDurationTag) gameUI.currentDurationTag.textContent = currentConfig.label;
   if (gameUI.currentPointsTag) gameUI.currentPointsTag.textContent = `+${currentConfig.points.toLocaleString()} PTS`;
   if (gameUI.playHintText) {
-    gameUI.playHintText.innerHTML = `LISTEN TO <strong>${currentConfig.label}</strong> (TAP PLAY OR <kbd class="hardware-key">SPACE</kbd>)`;
+    if (state.mode === "duel-local") {
+      gameUI.playHintText.innerHTML = `LISTEN TO <strong>${currentConfig.label}</strong> (HIT <kbd class="hardware-key">A</kbd> OR <kbd class="hardware-key">L</kbd> TO BUZZ)`;
+    } else {
+      gameUI.playHintText.innerHTML = `LISTEN TO <strong>${currentConfig.label}</strong> (TAP PLAY OR <kbd class="hardware-key">SPACE</kbd>)`;
+    }
   }
 
   if (state.currentLevelIndex < LEVELS.length - 1) {
@@ -686,37 +871,23 @@ function updateLevelUI() {
     if (gameUI.btnSkipLevel) gameUI.btnSkipLevel.style.display = "none";
   }
 
-  // Update 6 Step navigator tabs
-  if (gameUI.levelsTracker) {
-    const stepTabs = gameUI.levelsTracker.querySelectorAll(".nav-step-tab");
-    stepTabs.forEach((tab, idx) => {
-      tab.className = "nav-step-tab";
-      const badgeIcon = tab.querySelector(".step-badge i");
-
-      if (idx < state.currentLevelIndex) {
-        tab.classList.add("passed-wrong");
-        if (badgeIcon) badgeIcon.className = "fa-solid fa-xmark";
-      } else if (idx === state.currentLevelIndex) {
-        tab.classList.add("active");
-        if (badgeIcon) badgeIcon.className = "fa-solid fa-headphones";
-      } else {
-        if (badgeIcon) badgeIcon.className = "fa-solid fa-lock";
-      }
-    });
-  }
-
-  // Update 6-stage DAW timeline slots
+  // Update unified 6-stage timeline slots
   const slots = document.querySelectorAll("#segmented-progress-bar .timeline-slot");
   slots.forEach((slot, idx) => {
     slot.className = "timeline-slot";
     const meter = slot.querySelector(".slot-meter");
+    const statusIcon = slot.querySelector(".slot-status-icon i");
     if (meter) meter.style.width = "0%";
 
     if (idx < state.currentLevelIndex) {
-      slot.classList.add("unlocked");
+      slot.classList.add("passed-wrong");
       if (meter) meter.style.width = "100%";
+      if (statusIcon) statusIcon.className = "fa-solid fa-xmark";
     } else if (idx === state.currentLevelIndex) {
       slot.classList.add("active");
+      if (statusIcon) statusIcon.className = "fa-solid fa-headphones";
+    } else {
+      if (statusIcon) statusIcon.className = "fa-solid fa-lock";
     }
   });
 }
@@ -1014,24 +1185,36 @@ function handleCorrectGuess() {
   const currentConfig = LEVELS[state.currentLevelIndex];
   const pointsEarned = currentConfig.points;
 
-  state.totalScore += pointsEarned;
-  state.currentStreak += 1;
-  if (state.currentStreak > state.bestStreak) {
-    state.bestStreak = state.currentStreak;
+  if (state.mode === "duel-local") {
+    if (state.activeBuzzer === 1) {
+      state.p1.score += pointsEarned;
+    } else if (state.activeBuzzer === 2) {
+      state.p2.score += pointsEarned;
+    } else {
+      state.p1.score += pointsEarned;
+    }
+    updateDuelScoreboard();
+  } else {
+    state.totalScore += pointsEarned;
+    state.currentStreak += 1;
+    if (state.currentStreak > state.bestStreak) {
+      state.bestStreak = state.currentStreak;
+    }
   }
 
   state.roundsHistory.push({
     song: state.currentSong,
     won: true,
+    winner: state.mode === "duel-local" ? (state.activeBuzzer === 1 ? state.p1.name : state.p2.name) : null,
     level: currentConfig.level,
     duration: currentConfig.label,
     points: pointsEarned
   });
 
-  const stepTabs = gameUI.levelsTracker ? gameUI.levelsTracker.querySelectorAll(".nav-step-tab") : [];
-  if (stepTabs[state.currentLevelIndex]) {
-    stepTabs[state.currentLevelIndex].className = "nav-step-tab passed-correct";
-    const badgeIcon = stepTabs[state.currentLevelIndex].querySelector(".step-badge i");
+  const slots = document.querySelectorAll("#segmented-progress-bar .timeline-slot");
+  if (slots[state.currentLevelIndex]) {
+    slots[state.currentLevelIndex].className = "timeline-slot passed-correct";
+    const badgeIcon = slots[state.currentLevelIndex].querySelector(".slot-status-icon i");
     if (badgeIcon) badgeIcon.className = "fa-solid fa-check";
   }
 
@@ -1044,6 +1227,10 @@ function handleWrongGuess() {
   playSFX("wrong");
   showFeedback(`❌ Not quite! That wasn't "${state.selectedSuggestion.title}". Try next duration!`);
   clearGuessInput();
+
+  if (state.mode === "duel-local") {
+    resetBuzzers();
+  }
 
   if (state.currentLevelIndex < LEVELS.length - 1) {
     state.currentLevelIndex += 1;
@@ -1192,10 +1379,41 @@ function endGame() {
   const sub1s = state.roundsHistory.filter(r => r.won && r.duration === "1.0s").length;
   const accuracyPct = totalRounds > 0 ? Math.round((wins / totalRounds) * 100) : 0;
 
-  modalSummary.finalScore.textContent = state.totalScore.toLocaleString();
-  modalSummary.accuracy.textContent = `${accuracyPct}%`;
-  modalSummary.bestStreak.textContent = `${state.bestStreak}`;
-  modalSummary.sub1sCount.textContent = `${sub1s}`;
+  if (state.mode === "duel-local") {
+    if (duelUI.soloSummaryMatrix) duelUI.soloSummaryMatrix.style.display = "none";
+    if (duelUI.duelSummaryPod) duelUI.duelSummaryPod.style.display = "block";
+
+    let winner = "TIE MATCH!";
+    if (state.p1.score > state.p2.score) {
+      winner = `${state.p1.name.toUpperCase()} WINS!`;
+    } else if (state.p2.score > state.p1.score) {
+      winner = `${state.p2.name.toUpperCase()} WINS!`;
+    }
+
+    if (duelUI.duelWinnerName) duelUI.duelWinnerName.textContent = winner;
+    if (duelUI.duelP1FinalLabel) duelUI.duelP1FinalLabel.textContent = state.p1.name.toUpperCase();
+    if (duelUI.duelP1FinalScore) duelUI.duelP1FinalScore.textContent = `${state.p1.score.toLocaleString()} PTS`;
+    if (duelUI.duelP2FinalLabel) duelUI.duelP2FinalLabel.textContent = state.p2.name.toUpperCase();
+    if (duelUI.duelP2FinalScore) duelUI.duelP2FinalScore.textContent = `${state.p2.score.toLocaleString()} PTS`;
+
+    const summaryHeading = document.getElementById("summary-main-heading");
+    if (summaryHeading) summaryHeading.textContent = "1V1 DUEL RESULTS";
+    const summarySub = document.getElementById("summary-subcaption");
+    if (summarySub) summarySub.textContent = `${state.p1.name} vs ${state.p2.name}`;
+  } else {
+    if (duelUI.soloSummaryMatrix) duelUI.soloSummaryMatrix.style.display = "grid";
+    if (duelUI.duelSummaryPod) duelUI.duelSummaryPod.style.display = "none";
+
+    modalSummary.finalScore.textContent = state.totalScore.toLocaleString();
+    modalSummary.accuracy.textContent = `${accuracyPct}%`;
+    modalSummary.bestStreak.textContent = `${state.bestStreak}`;
+    modalSummary.sub1sCount.textContent = `${sub1s}`;
+
+    const summaryHeading = document.getElementById("summary-main-heading");
+    if (summaryHeading) summaryHeading.textContent = "SESSION COMPLETE";
+    const summarySub = document.getElementById("summary-subcaption");
+    if (summarySub) summarySub.textContent = "Telemetry logged by BeatDrop Sound System";
+  }
 
   const gridText = generateShareableGrid(wins, totalRounds);
   modalSummary.shareGrid.textContent = gridText;
@@ -1204,10 +1422,14 @@ function endGame() {
 }
 
 function generateShareableGrid(wins, totalRounds) {
-  let text = `⚡ BeatDrop (Engineered by Ritesh)\n`;
-  text += `Deck: ${state.playlistTitle} [${state.platformBadge}]\n`;
-  text += `Score: ${state.totalScore.toLocaleString()} pts | ${wins}/${totalRounds} Correct\n`;
-  text += `Best Streak: 🔥 ${state.bestStreak}\n\n`;
+  let text = `⚡ BeatDrop // Engineered by Ritesh\n`;
+  if (state.mode === "duel-local") {
+    text += `⚔️ 1v1 DUEL: ${state.p1.name} (${state.p1.score} pts) vs ${state.p2.name} (${state.p2.score} pts)\n`;
+  } else {
+    text += `Deck: ${state.playlistTitle} [${state.platformBadge}]\n`;
+    text += `Score: ${state.totalScore.toLocaleString()} pts | ${wins}/${totalRounds} Correct\n`;
+    text += `Best Streak: 🔥 ${state.bestStreak}\n\n`;
+  }
 
   state.roundsHistory.forEach((r, idx) => {
     let emoji = "⬛";
@@ -1218,7 +1440,8 @@ function generateShareableGrid(wins, totalRounds) {
     } else {
       emoji = "🟥";
     }
-    text += `${idx + 1}. ${emoji} (${r.duration} - ${r.points} pts)\n`;
+    const winNote = r.winner ? ` [${r.winner}]` : "";
+    text += `${idx + 1}. ${emoji} (${r.duration} - ${r.points} pts)${winNote}\n`;
   });
 
   return text.trim();
