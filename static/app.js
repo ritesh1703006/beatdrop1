@@ -9,11 +9,11 @@
 // ============================================================
 
 const LEVELS = [
-  { level: 1, duration: 1.0,  points: 1000, label: "1.0s" },
-  { level: 2, duration: 2.0,  points: 800,  label: "2.0s" },
-  { level: 3, duration: 4.0,  points: 400,  label: "4.0s" },
-  { level: 4, duration: 7.0,  points: 300,  label: "7.0s" },
-  { level: 5, duration: 11.0, points: 200,  label: "11.0s" },
+  { level: 1, duration: 0.1,  points: 1000, label: "0.1s" },
+  { level: 2, duration: 1.0,  points: 800,  label: "1.0s" },
+  { level: 3, duration: 2.0,  points: 600,  label: "2.0s" },
+  { level: 4, duration: 4.0,  points: 400,  label: "4.0s" },
+  { level: 5, duration: 7.0,  points: 200,  label: "7.0s" },
   { level: 6, duration: 16.0, points: 100,  label: "16.0s" }
 ];
 
@@ -1606,6 +1606,17 @@ async function playCurrentSnippet() {
 
 function handleSnippetPlayingStarted() {
   clearTimeout(state.bufferWatchdogId);
+
+  if (state.mode === "duel-online") {
+    startVisualizer();
+    if (gameUI.playHintText) gameUI.playHintText.textContent = "Streaming audio snippet... HIT BUZZ TO GUESS!";
+    clearTimeout(state.snippetTimeoutId);
+    state.snippetTimeoutId = setTimeout(() => {
+      stopSnippetPlayback();
+    }, 16000);
+    return;
+  }
+
   const currentConfig = LEVELS[state.currentLevelIndex];
   const durationMs = currentConfig.duration * 1000;
 
@@ -1953,7 +1964,13 @@ function showRevealModal(won, pointsEarned, timeTaken) {
   if (won) {
     modalReveal.badge.className = "status-stamp win";
     modalReveal.badge.innerHTML = `<i class="fa-solid fa-trophy"></i> TRACK IDENTIFIED`;
-    modalReveal.title.textContent = timeTaken === "1.0s" ? "⚡ GODLIKE EAR! 1-SEC GUESS!" : "🎉 TRACK IDENTIFIED!";
+    let heroTitle = "🎉 TRACK IDENTIFIED!";
+    if (timeTaken === "0.1s") {
+      heroTitle = "⚡ 0.1-SEC MADNESS! GODLIKE EAR!";
+    } else if (timeTaken === "1.0s") {
+      heroTitle = "🔥 1-SEC LIGHTNING GUESS!";
+    }
+    modalReveal.title.textContent = heroTitle;
     modalReveal.pointsEarned.textContent = `+${pointsEarned.toLocaleString()} PTS`;
   } else {
     modalReveal.badge.className = "status-stamp missed";
@@ -2026,7 +2043,7 @@ function endGame() {
 
   const totalRounds = state.roundsHistory.length;
   const wins = state.roundsHistory.filter(r => r.won).length;
-  const sub1s = state.roundsHistory.filter(r => r.won && r.duration === "1.0s").length;
+  const sub1s = state.roundsHistory.filter(r => r.won && (r.duration === "0.1s" || r.duration === "1.0s")).length;
   const accuracyPct = totalRounds > 0 ? Math.round((wins / totalRounds) * 100) : 0;
 
   if (state.mode === "duel-local") {
