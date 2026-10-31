@@ -268,7 +268,7 @@ const gameUI = {
   playlistCount: document.getElementById("playlist-count-badge"),
   vinylDisc: document.getElementById("vinyl-disc"),
   revealedAlbumArt: document.getElementById("revealed-album-art"),
-  vinylMysteryIcon: document.querySelector(".vinyl-mystery-icon"),
+  vinylMysteryIcon: document.querySelector(".vinyl-art-mystery"),
   tonearm: document.getElementById("tonearm"),
   visualizer: document.getElementById("visualizer"),
   vuMeterL: document.getElementById("vu-meter-l"),
@@ -322,8 +322,9 @@ const modalSummary = {
 // ============================================================
 
 function setupVisualizerBars() {
+  if (!gameUI.visualizer) return;
   gameUI.visualizer.innerHTML = "";
-  const BAR_COUNT = 28;
+  const BAR_COUNT = 32;
   for (let i = 0; i < BAR_COUNT; i++) {
     const bar = document.createElement("div");
     bar.className = "v-bar";
@@ -333,52 +334,55 @@ function setupVisualizerBars() {
 
 let visualizerInterval = null;
 function startVisualizer() {
+  if (!gameUI.visualizer) return;
   const bars = gameUI.visualizer.querySelectorAll(".v-bar");
   bars.forEach(b => b.classList.add("active"));
-  gameUI.vinylDisc.classList.add("playing");
-  gameUI.btnPlaySnippet.classList.add("playing");
-  gameUI.playIcon.className = "fa-solid fa-volume-high";
+  if (gameUI.vinylDisc) gameUI.vinylDisc.classList.add("playing");
+  if (gameUI.btnPlaySnippet) gameUI.btnPlaySnippet.classList.add("playing");
+  if (gameUI.playIcon) gameUI.playIcon.className = "fa-solid fa-volume-high";
 
   if (gameUI.tonearm) gameUI.tonearm.classList.add("playing");
 
-  const vuLedsL = gameUI.vuMeterL ? gameUI.vuMeterL.querySelectorAll(".vu-led") : [];
-  const vuLedsR = gameUI.vuMeterR ? gameUI.vuMeterR.querySelectorAll(".vu-led") : [];
+  const vuSegmentsL = gameUI.vuMeterL ? Array.from(gameUI.vuMeterL.querySelectorAll(".vu-segment")) : [];
+  const vuSegmentsR = gameUI.vuMeterR ? Array.from(gameUI.vuMeterR.querySelectorAll(".vu-segment")) : [];
 
   clearInterval(visualizerInterval);
   visualizerInterval = setInterval(() => {
     bars.forEach((bar, idx) => {
-      const centerFactor = 1 - Math.abs(idx - 14) / 16;
-      const h = Math.floor(Math.random() * 32 * centerFactor) + 6;
+      const centerFactor = 1 - Math.abs(idx - 16) / 18;
+      const h = Math.floor(Math.random() * 26 * Math.max(0.2, centerFactor)) + 6;
       bar.style.height = `${h}px`;
     });
 
-    // Animate VU meters (random dynamic decibel bounce)
-    const activeCountL = Math.floor(Math.random() * 8) + 1;
-    const activeCountR = Math.floor(Math.random() * 8) + 1;
-    vuLedsL.forEach((led, i) => {
-      led.classList.toggle("active", i < activeCountL);
+    // Realistic VU meter bounce: segments indexed 0 (top, red) to N-1 (bottom, green)
+    const countL = Math.floor(Math.random() * 8) + 1;
+    const countR = Math.floor(Math.random() * 8) + 1;
+    vuSegmentsL.forEach((seg, i) => {
+      seg.classList.toggle("active", i >= (vuSegmentsL.length - countL));
     });
-    vuLedsR.forEach((led, i) => {
-      led.classList.toggle("active", i < activeCountR);
+    vuSegmentsR.forEach((seg, i) => {
+      seg.classList.toggle("active", i >= (vuSegmentsR.length - countR));
     });
   }, 75);
 }
 
 function stopVisualizer() {
   clearInterval(visualizerInterval);
-  const bars = gameUI.visualizer.querySelectorAll(".v-bar");
-  bars.forEach(bar => {
-    bar.classList.remove("active");
-    bar.style.height = "5px";
-  });
-  gameUI.vinylDisc.classList.remove("playing");
-  gameUI.btnPlaySnippet.classList.remove("playing");
-  gameUI.playIcon.className = "fa-solid fa-play";
+  if (gameUI.visualizer) {
+    const bars = gameUI.visualizer.querySelectorAll(".v-bar");
+    bars.forEach(bar => {
+      bar.classList.remove("active");
+      bar.style.height = "4px";
+    });
+  }
+  if (gameUI.vinylDisc) gameUI.vinylDisc.classList.remove("playing");
+  if (gameUI.btnPlaySnippet) gameUI.btnPlaySnippet.classList.remove("playing");
+  if (gameUI.playIcon) gameUI.playIcon.className = "fa-solid fa-play";
 
   if (gameUI.tonearm) gameUI.tonearm.classList.remove("playing");
 
-  const vuLeds = document.querySelectorAll(".vu-led");
-  vuLeds.forEach(led => led.classList.remove("active"));
+  const vuSegments = document.querySelectorAll(".vu-segment");
+  vuSegments.forEach(seg => seg.classList.remove("active"));
 }
 
 // ============================================================
@@ -652,10 +656,12 @@ async function loadRound() {
 }
 
 function resetRoundUI() {
-  gameUI.vinylDisc.classList.remove("playing");
-  gameUI.vinylMysteryIcon.style.display = "flex";
-  gameUI.revealedAlbumArt.style.display = "none";
-  gameUI.revealedAlbumArt.src = "";
+  if (gameUI.vinylDisc) gameUI.vinylDisc.classList.remove("playing");
+  if (gameUI.vinylMysteryIcon) gameUI.vinylMysteryIcon.style.display = "flex";
+  if (gameUI.revealedAlbumArt) {
+    gameUI.revealedAlbumArt.style.display = "none";
+    gameUI.revealedAlbumArt.src = "";
+  }
 
   updateLevelUI();
   resetProgressFill();
@@ -665,46 +671,52 @@ function resetRoundUI() {
 function updateLevelUI() {
   const currentConfig = LEVELS[state.currentLevelIndex];
 
-  gameUI.currentLevelTag.textContent = `LEVEL ${currentConfig.level}`;
-  gameUI.currentDurationTag.textContent = currentConfig.label;
-  gameUI.currentPointsTag.textContent = `+${currentConfig.points.toLocaleString()} PTS`;
-  gameUI.playHintText.innerHTML = `Listen to <strong>${currentConfig.label}</strong> (Hit Play or Space)`;
+  if (gameUI.currentLevelTag) gameUI.currentLevelTag.textContent = `STAGE ${currentConfig.level}`;
+  if (gameUI.currentDurationTag) gameUI.currentDurationTag.textContent = currentConfig.label;
+  if (gameUI.currentPointsTag) gameUI.currentPointsTag.textContent = `+${currentConfig.points.toLocaleString()} PTS`;
+  if (gameUI.playHintText) {
+    gameUI.playHintText.innerHTML = `LISTEN TO <strong>${currentConfig.label}</strong> (TAP PLAY OR <kbd class="hardware-key">SPACE</kbd>)`;
+  }
 
   if (state.currentLevelIndex < LEVELS.length - 1) {
     const nextConfig = LEVELS[state.currentLevelIndex + 1];
-    gameUI.skipBtnText.textContent = `SKIP TO ${nextConfig.label}`;
-    gameUI.btnSkipLevel.style.display = "inline-flex";
+    if (gameUI.skipBtnText) gameUI.skipBtnText.textContent = `SKIP TO ${nextConfig.label}`;
+    if (gameUI.btnSkipLevel) gameUI.btnSkipLevel.style.display = "inline-flex";
   } else {
-    gameUI.btnSkipLevel.style.display = "none";
+    if (gameUI.btnSkipLevel) gameUI.btnSkipLevel.style.display = "none";
   }
 
-  const steps = gameUI.levelsTracker.querySelectorAll(".stage-tab");
-  steps.forEach((step, idx) => {
-    step.className = "stage-tab";
-    const statusIcon = step.querySelector(".tab-icon i");
+  // Update 6 Step navigator tabs
+  if (gameUI.levelsTracker) {
+    const stepTabs = gameUI.levelsTracker.querySelectorAll(".nav-step-tab");
+    stepTabs.forEach((tab, idx) => {
+      tab.className = "nav-step-tab";
+      const badgeIcon = tab.querySelector(".step-badge i");
+
+      if (idx < state.currentLevelIndex) {
+        tab.classList.add("passed-wrong");
+        if (badgeIcon) badgeIcon.className = "fa-solid fa-xmark";
+      } else if (idx === state.currentLevelIndex) {
+        tab.classList.add("active");
+        if (badgeIcon) badgeIcon.className = "fa-solid fa-headphones";
+      } else {
+        if (badgeIcon) badgeIcon.className = "fa-solid fa-lock";
+      }
+    });
+  }
+
+  // Update 6-stage DAW timeline slots
+  const slots = document.querySelectorAll("#segmented-progress-bar .timeline-slot");
+  slots.forEach((slot, idx) => {
+    slot.className = "timeline-slot";
+    const meter = slot.querySelector(".slot-meter");
+    if (meter) meter.style.width = "0%";
 
     if (idx < state.currentLevelIndex) {
-      step.classList.add("passed-wrong");
-      statusIcon.className = "fa-solid fa-xmark";
+      slot.classList.add("unlocked");
+      if (meter) meter.style.width = "100%";
     } else if (idx === state.currentLevelIndex) {
-      step.classList.add("active");
-      statusIcon.className = "fa-solid fa-headphones";
-    } else {
-      statusIcon.className = "fa-solid fa-lock";
-    }
-  });
-
-  const timelineCells = document.querySelectorAll("#segmented-progress-bar .timeline-cell");
-  timelineCells.forEach((cell, idx) => {
-    cell.className = "timeline-cell";
-    const fill = cell.querySelector(".cell-fill");
-    if (fill) fill.style.width = "0%";
-
-    if (idx < state.currentLevelIndex) {
-      cell.classList.add("unlocked");
-      if (fill) fill.style.width = "100%";
-    } else if (idx === state.currentLevelIndex) {
-      cell.classList.add("active");
+      slot.classList.add("active");
     }
   });
 }
@@ -837,14 +849,14 @@ function stopSnippetPlayback() {
 function animateProgressFill(durationSec) {
   const startTime = performance.now();
   const totalMs = durationSec * 1000;
-  const activeSegFill = document.querySelector("#segmented-progress-bar .timeline-cell.active .cell-fill");
+  const activeMeter = document.querySelector("#segmented-progress-bar .timeline-slot.active .slot-meter");
 
   function step(currentTime) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(100, (elapsed / totalMs) * 100);
 
-    if (activeSegFill) {
-      activeSegFill.style.width = `${progress}%`;
+    if (activeMeter) {
+      activeMeter.style.width = `${progress}%`;
     }
 
     if (elapsed < totalMs && state.isPlayingSnippet) {
@@ -857,9 +869,9 @@ function animateProgressFill(durationSec) {
 }
 
 function resetProgressFill() {
-  const activeSegFill = document.querySelector("#segmented-progress-bar .timeline-cell.active .cell-fill");
-  if (activeSegFill) {
-    activeSegFill.style.width = "0%";
+  const activeMeter = document.querySelector("#segmented-progress-bar .timeline-slot.active .slot-meter");
+  if (activeMeter) {
+    activeMeter.style.width = "0%";
   }
 }
 
@@ -1016,10 +1028,11 @@ function handleCorrectGuess() {
     points: pointsEarned
   });
 
-  const steps = gameUI.levelsTracker.querySelectorAll(".stage-tab");
-  if (steps[state.currentLevelIndex]) {
-    steps[state.currentLevelIndex].className = "stage-tab passed-correct";
-    steps[state.currentLevelIndex].querySelector(".tab-icon i").className = "fa-solid fa-check";
+  const stepTabs = gameUI.levelsTracker ? gameUI.levelsTracker.querySelectorAll(".nav-step-tab") : [];
+  if (stepTabs[state.currentLevelIndex]) {
+    stepTabs[state.currentLevelIndex].className = "nav-step-tab passed-correct";
+    const badgeIcon = stepTabs[state.currentLevelIndex].querySelector(".step-badge i");
+    if (badgeIcon) badgeIcon.className = "fa-solid fa-check";
   }
 
   playSFX("win");
@@ -1106,20 +1119,24 @@ function showRevealModal(won, pointsEarned, timeTaken) {
   modalReveal.streakVal.textContent = `🔥 ${state.currentStreak}`;
 
   if (won) {
-    modalReveal.badge.className = "reveal-stamp win";
+    modalReveal.badge.className = "status-stamp win";
     modalReveal.badge.innerHTML = `<i class="fa-solid fa-trophy"></i> TRACK IDENTIFIED`;
     modalReveal.title.textContent = timeTaken === "1.0s" ? "⚡ GODLIKE EAR! 1-SEC GUESS!" : "🎉 TRACK IDENTIFIED!";
     modalReveal.pointsEarned.textContent = `+${pointsEarned.toLocaleString()} PTS`;
   } else {
-    modalReveal.badge.className = "reveal-stamp missed";
+    modalReveal.badge.className = "status-stamp missed";
     modalReveal.badge.innerHTML = `<i class="fa-solid fa-xmark"></i> MISSED`;
     modalReveal.title.textContent = "BETTER LUCK NEXT TIME";
     modalReveal.pointsEarned.textContent = "0 PTS";
   }
 
-  gameUI.revealedAlbumArt.src = state.currentSong.thumbnail;
-  gameUI.revealedAlbumArt.style.display = "block";
-  gameUI.vinylMysteryIcon.style.display = "none";
+  if (gameUI.revealedAlbumArt) {
+    gameUI.revealedAlbumArt.src = state.currentSong.thumbnail;
+    gameUI.revealedAlbumArt.style.display = "block";
+  }
+  if (gameUI.vinylMysteryIcon) {
+    gameUI.vinylMysteryIcon.style.display = "none";
+  }
 
   modalReveal.overlay.style.display = "flex";
   startFullTrackPlayback();
