@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BEATDROP // Audiophile Music Heardle — Engineered by Ritesh</title>
+  <title>BeatDrop — Universal Music Heardle | Curated by Ritesh</title>
 
-  <!-- Typography: Syne (Headlines), Plus Jakarta Sans (Clean UI), JetBrains Mono (DAW Telemetry) -->
+  <!-- Typography: Plus Jakarta Sans (Modern UI) & JetBrains Mono (Precision Clocks) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- FontAwesome 6 Pro-style icons -->
+  <!-- FontAwesome 6 icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Canvas Confetti -->
@@ -20,9 +20,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Precision Technical Grid Backdrop -->
-  <div class="tech-grid-bg"></div>
-  <div class="studio-vignette"></div>
+  <!-- Ambient Atmospheric Lighting -->
+  <div class="ambient-backdrop"></div>
 
   <!-- Offscreen Active YouTube Audio Bridge -->
   <div id="hidden-player-wrapper">
@@ -32,7 +31,7 @@
   <div class="app-viewport">
     
     <!-- ============================================================
-         HEADER: STUDIO CONTROL CONSOLE
+         HEADER: MODERN APP BAR
          ============================================================ -->
     <header class="studio-header">
       <div class="header-left">
@@ -42,30 +41,30 @@
           </div>
           <div class="brand-meta">
             <div class="brand-title-wrap">
-              <span class="brand-logo">BEAT<span class="neon-accent">DROP</span></span>
-              <span class="studio-chip">AUDIO LABS</span>
+              <span class="brand-logo">BeatDrop</span>
+              <span class="studio-chip">HEARDLE</span>
             </div>
             <div class="brand-author-line">
               <span class="live-dot"></span>
-              <span>CURATED & ENGINEERED BY <strong class="author-name">RITESH</strong></span>
+              <span>Curated by <strong class="author-name">Ritesh</strong></span>
             </div>
           </div>
         </div>
       </div>
 
       <div class="header-right">
-        <!-- Live Engine Telemetry -->
-        <div class="telemetry-pill" id="audio-chip" title="Web Audio & YouTube Engine Status">
+        <!-- Live Audio Status -->
+        <div class="telemetry-pill" id="audio-chip" title="Audio Player Status">
           <span class="status-indicator ready" id="audio-status-dot"></span>
-          <span class="telemetry-label" id="audio-status-text">ENGINE READY</span>
+          <span class="telemetry-label" id="audio-status-text">Audio Ready</span>
         </div>
 
         <!-- Master Sound FX Toggle -->
-        <button id="btn-toggle-sfx" class="btn-console-icon" title="Toggle Mechanical Sound FX">
+        <button id="btn-toggle-sfx" class="btn-console-icon" title="Toggle Sound Effects">
           <i class="fa-solid fa-volume-high" id="sfx-icon"></i>
         </button>
 
-        <!-- In-Game Telemetry Bar -->
+        <!-- In-Game Stats Cluster -->
         <div class="live-score-cluster" id="nav-stats" style="display: none;">
           <div class="cluster-pill score-cluster" title="Score">
             <i class="fa-solid fa-bolt"></i>
@@ -76,15 +75,15 @@
             <i class="fa-solid fa-fire"></i>
             <span class="cluster-val" id="nav-streak">0</span>
           </div>
-          <div class="cluster-pill round-cluster" title="Round Progress">
+          <div class="cluster-pill round-cluster" title="Track Number">
             <span class="cluster-unit">TRACK</span>
             <span class="cluster-val" id="nav-round">1</span>
             <span class="cluster-dim">/</span>
             <span id="nav-max-rounds">10</span>
           </div>
-          <button id="btn-quit" class="btn-quit-session" title="Change Deck / Exit Session">
+          <button id="btn-quit" class="btn-quit-session" title="Exit to Playlist Selector">
             <i class="fa-solid fa-arrow-right-from-bracket"></i>
-            <span>ABORT</span>
+            <span>Exit</span>
           </button>
         </div>
       </div>
@@ -101,16 +100,16 @@
       <section id="screen-setup" class="screen-view active">
         <div class="console-card">
           
-          <!-- Master Banner -->
+          <!-- Hero Header -->
           <div class="hero-masthead">
             <div class="badge-cluster">
-              <span class="dhh-pill">🔥 DESI HIP HOP // GLOBAL ANTHEMS</span>
-              <span class="hearmaster-tag">NAME THAT TUNE IN &lt; 1 SEC</span>
+              <span class="dhh-pill"><i class="fa-solid fa-fire"></i> Desi Hip Hop & Global Anthems</span>
+              <span class="hearmaster-tag"><i class="fa-solid fa-headphones"></i> 1-Second Challenge</span>
             </div>
-            <h1 class="hero-headline">HOW SHARP IS YOUR <span class="neon-highlight">MUSIC EAR</span>?</h1>
+            <h1 class="hero-headline">Guess the song <span class="neon-highlight">from the first beat.</span></h1>
             <p class="hero-subline">
               Drop any playlist from <strong>Spotify</strong>, <strong>Apple Music</strong>, or <strong>YouTube</strong>. 
-              The engine extracts the tracks and tests if you can identify your favorite songs from their very first drum hit.
+              Listen to progressive audio snippets and see if you can name the track in under a second.
             </p>
           </div>
 
@@ -118,11 +117,11 @@
           <div class="platform-strip">
             <div class="strip-item spotify active">
               <i class="fa-brands fa-spotify"></i>
-              <span>Spotify Playlists & Albums</span>
+              <span>Spotify</span>
             </div>
             <div class="strip-item apple">
               <i class="fa-brands fa-apple"></i>
-              <span>Apple Music Playlists</span>
+              <span>Apple Music</span>
             </div>
             <div class="strip-item ytmusic">
               <i class="fa-brands fa-youtube"></i>
@@ -134,7 +133,7 @@
             </div>
           </div>
 
-          <!-- Input Console -->
+          <!-- Input Bay -->
           <div class="input-bay">
             <div class="url-input-housing">
               <div class="input-prefix-icon">
@@ -149,7 +148,7 @@
               />
               <button id="btn-paste" class="btn-paste-action" title="Paste from clipboard">
                 <i class="fa-regular fa-clipboard"></i>
-                <span>PASTE</span>
+                <span>Paste</span>
               </button>
             </div>
 
@@ -166,7 +165,7 @@
               <div class="selector-control">
                 <span class="control-label"><i class="fa-solid fa-sliders"></i> GAME LENGTH:</span>
                 <select id="select-rounds-count" class="hardware-select">
-                  <option value="10" selected>10 Tracks (Standard Session)</option>
+                  <option value="10" selected>10 Tracks (Standard)</option>
                   <option value="25">25 Tracks (Deep Cut)</option>
                   <option value="50">50 Tracks (Marathon)</option>
                   <option value="all">Full Playlist (All Songs)</option>
@@ -174,7 +173,7 @@
               </div>
 
               <button id="btn-load-playlist" class="btn-ignite-game">
-                <span>START CHALLENGE</span>
+                <span>Start Challenge</span>
                 <i class="fa-solid fa-arrow-right"></i>
               </button>
             </div>
@@ -184,7 +183,7 @@
               <div class="audio-loader-eq">
                 <span></span><span></span><span></span><span></span><span></span>
               </div>
-              <span id="loader-message">Parsing audio catalog & mapping stems...</span>
+              <span id="loader-message">Parsing audio catalog & preparing tracks...</span>
             </div>
             <div id="error-message" class="status-feed error" style="display: none;"></div>
           </div>
@@ -193,8 +192,8 @@
           <div class="decks-gallery">
             <div class="gallery-header">
               <div class="gallery-title-group">
-                <span class="gallery-tag">VERIFIED PLAYLISTS</span>
-                <span class="gallery-desc">Instant play — no URL needed</span>
+                <span class="gallery-tag">FEATURED PLAYLISTS</span>
+                <span class="gallery-desc">Instant play — click to start</span>
               </div>
               <div class="gallery-accent-line"></div>
             </div>
@@ -204,12 +203,12 @@
             </div>
           </div>
 
-          <!-- Studio Footer -->
+          <!-- Footer Signature -->
           <footer class="studio-signature">
             <div class="sig-line"></div>
             <div class="sig-body">
-              <span class="sig-brand">BEATDROP // PRECISION AUDIO SAMPLER</span>
-              <span class="sig-author">DESIGNED & ENGINEERED WITH PRIDE BY <strong>RITESH</strong> FOR DHH HEADS & MUSIC ENTHUSIASTS</span>
+              <span class="sig-brand">BEATDROP // UNIVERSAL MUSIC HEARDLE</span>
+              <span class="sig-author">Curated & Crafted with pride by <strong>Ritesh</strong> for music lovers everywhere</span>
             </div>
           </footer>
 
@@ -217,7 +216,7 @@
       </section>
 
       <!-- ============================================================
-           VIEW 2: HARDWARE ARENA DECK
+           VIEW 2: GAME ARENA DECK
            ============================================================ -->
       <section id="screen-game" class="screen-view">
         <div class="arena-deck-frame">
@@ -229,16 +228,16 @@
               <span id="source-platform-name">PLAYLIST</span>
             </div>
             <div class="deck-song-identity">
-              <strong id="game-playlist-title">Catalog Name</strong>
+              <strong id="game-playlist-title">Playlist Title</strong>
             </div>
             <div class="deck-capacity-badge" id="playlist-count-badge">50 TRACKS</div>
           </div>
 
-          <!-- Centerpiece: Hardware Platter + Dual Studio VU Meters -->
+          <!-- Centerpiece: Luxury Minimalist Turntable + Studio VU Meters -->
           <div class="hardware-master-console">
             
             <!-- Left Channel VU Ladder -->
-            <div class="vu-channel-tower" title="Channel A (L) Peak Meter">
+            <div class="vu-channel-tower" title="Left Channel Peak Meter">
               <div class="vu-channel-header">CH L</div>
               <div class="vu-meter-column" id="vu-meter-l">
                 <div class="vu-segment red" data-db="+3"></div>
@@ -266,8 +265,7 @@
                     <div class="vinyl-record-center">
                       <div class="spindle-brass-peg"></div>
                       <div class="vinyl-art-mystery">
-                        <i class="fa-solid fa-compact-disc"></i>
-                        <span>?</span>
+                        <i class="fa-solid fa-music"></i>
                       </div>
                       <img id="revealed-album-art" src="" alt="Album Artwork" style="display: none;">
                     </div>
@@ -287,7 +285,7 @@
             </div>
 
             <!-- Right Channel VU Ladder -->
-            <div class="vu-channel-tower" title="Channel B (R) Peak Meter">
+            <div class="vu-channel-tower" title="Right Channel Peak Meter">
               <div class="vu-channel-header">CH R</div>
               <div class="vu-meter-column" id="vu-meter-r">
                 <div class="vu-segment red" data-db="+3"></div>
@@ -305,10 +303,10 @@
 
           </div>
 
-          <!-- Live Audio Spectrum Oscilloscope -->
+          <!-- Live Audio Spectrum Waveform -->
           <div class="oscilloscope-rack">
             <div class="oscilloscope-bars" id="visualizer">
-              <!-- 32 high-precision frequency spectrum columns -->
+              <!-- 32 spectrum columns -->
             </div>
           </div>
 
@@ -321,29 +319,27 @@
                 <strong class="gauge-figure accent" id="current-level-tag">STAGE 1</strong>
               </div>
               <div class="timecode-gauge">
-                <span class="gauge-tag">DURATION</span>
+                <span class="gauge-tag">SNIPPET DURATION</span>
                 <strong class="gauge-figure time" id="current-duration-tag">1.00s</strong>
               </div>
               <div class="timecode-gauge">
-                <span class="gauge-tag">VALUE</span>
+                <span class="gauge-tag">POINTS AVAILABLE</span>
                 <strong class="gauge-figure gold" id="current-points-tag">+1,000 PTS</strong>
               </div>
             </div>
 
-            <!-- Tactile Master Play Trigger -->
+            <!-- Tactile Master Play Button -->
             <div class="play-trigger-housing">
-              <button id="btn-play-snippet" class="btn-studio-play" title="Trigger Snippet (Spacebar)">
-                <div class="play-pulse-ring"></div>
-                <div class="play-pulse-ring ring-2"></div>
+              <button id="btn-play-snippet" class="btn-studio-play" title="Play Snippet (Spacebar)">
                 <i class="fa-solid fa-play" id="play-icon"></i>
               </button>
             </div>
 
             <div class="play-action-cue">
-              <span id="play-hint-text">PRESS <strong>PLAY</strong> OR TAP <kbd class="hardware-key">SPACE</kbd> TO LISTEN</span>
+              <span id="play-hint-text">Click <strong>Play</strong> or press <kbd class="hardware-key">Space</kbd> to listen</span>
             </div>
 
-            <!-- Precision 6-Stage Heardle Timeline -->
+            <!-- 6-Stage Heardle Progress Track -->
             <div class="stage-timeline-track" id="segmented-progress-bar">
               <div class="timeline-slot" data-seg="0">
                 <div class="slot-meter"></div>
@@ -378,42 +374,42 @@
             <div class="nav-step-tab active" data-level="1">
               <span class="step-label">TRY 1</span>
               <strong class="step-clock">1.0s</strong>
-              <span class="step-reward">1000pt</span>
+              <span class="step-reward">1,000 pt</span>
               <div class="step-badge"><i class="fa-solid fa-headphones"></i></div>
             </div>
             <div class="nav-step-tab" data-level="2">
               <span class="step-label">TRY 2</span>
               <strong class="step-clock">2.0s</strong>
-              <span class="step-reward">800pt</span>
+              <span class="step-reward">800 pt</span>
               <div class="step-badge"><i class="fa-solid fa-lock"></i></div>
             </div>
             <div class="nav-step-tab" data-level="3">
               <span class="step-label">TRY 3</span>
               <strong class="step-clock">4.0s</strong>
-              <span class="step-reward">600pt</span>
+              <span class="step-reward">600 pt</span>
               <div class="step-badge"><i class="fa-solid fa-lock"></i></div>
             </div>
             <div class="nav-step-tab" data-level="4">
               <span class="step-label">TRY 4</span>
               <strong class="step-clock">7.0s</strong>
-              <span class="step-reward">400pt</span>
+              <span class="step-reward">400 pt</span>
               <div class="step-badge"><i class="fa-solid fa-lock"></i></div>
             </div>
             <div class="nav-step-tab" data-level="5">
               <span class="step-label">TRY 5</span>
               <strong class="step-clock">11.0s</strong>
-              <span class="step-reward">200pt</span>
+              <span class="step-reward">200 pt</span>
               <div class="step-badge"><i class="fa-solid fa-lock"></i></div>
             </div>
             <div class="nav-step-tab" data-level="6">
               <span class="step-label">TRY 6</span>
               <strong class="step-clock">16.0s</strong>
-              <span class="step-reward">100pt</span>
+              <span class="step-reward">100 pt</span>
               <div class="step-badge"><i class="fa-solid fa-lock"></i></div>
             </div>
           </div>
 
-          <!-- Pro Search & Guess Input Console -->
+          <!-- Search & Guess Console -->
           <div class="guess-control-bay">
             <div class="search-field-housing">
               <i class="fa-solid fa-magnifying-glass search-field-glyph"></i>
@@ -435,22 +431,22 @@
             <div class="console-action-row">
               <button id="btn-submit-guess" class="btn-submit-attempt" disabled>
                 <i class="fa-solid fa-check"></i>
-                <span>SUBMIT GUESS</span>
+                <span>Submit Guess</span>
               </button>
               
               <button id="btn-skip-level" class="btn-skip-attempt" title="Unlock next longer audio window">
                 <i class="fa-solid fa-forward-step"></i>
-                <span id="skip-btn-text">SKIP (+1s)</span>
+                <span id="skip-btn-text">Skip (+1s)</span>
               </button>
 
               <button id="btn-give-up" class="btn-forfeit-attempt" title="Give up on current track">
                 <i class="fa-regular fa-flag"></i>
-                <span>GIVE UP</span>
+                <span>Give Up</span>
               </button>
             </div>
           </div>
 
-          <!-- Live Diagnostic Feedback Banner -->
+          <!-- Diagnostic Feedback Banner -->
           <div id="guess-feedback" class="diagnostic-banner" style="display: none;"></div>
 
           <!-- Keyboard Shortcuts Bar -->
@@ -472,9 +468,9 @@
           
           <div class="reveal-topline">
             <div class="status-stamp" id="reveal-badge">
-              <i class="fa-solid fa-trophy"></i> TRACK IDENTIFIED
+              <i class="fa-solid fa-trophy"></i> Track Identified
             </div>
-            <h2 class="reveal-hero-text" id="reveal-title">GODLIKE EAR!</h2>
+            <h2 class="reveal-hero-text" id="reveal-title">Well Done!</h2>
           </div>
 
           <div class="vinyl-reveal-assembly">
@@ -492,7 +488,7 @@
               <div class="metric-readouts-grid">
                 <div class="metric-cell">
                   <span class="cell-tag">POINTS</span>
-                  <strong class="cell-val neon" id="reveal-points-earned">+1000 PTS</strong>
+                  <strong class="cell-val neon" id="reveal-points-earned">+1,000 PTS</strong>
                 </div>
                 <div class="metric-cell">
                   <span class="cell-tag">TIME TAKEN</span>
@@ -506,7 +502,7 @@
 
               <div class="outbound-action-row">
                 <a id="reveal-yt-link" href="#" target="_blank" class="outbound-yt-btn" rel="noopener">
-                  <i class="fa-brands fa-youtube"></i> Open full track on YouTube
+                  <i class="fa-brands fa-youtube"></i> Listen to full track on YouTube
                 </a>
               </div>
             </div>
@@ -514,7 +510,7 @@
 
           <div class="modal-action-footer">
             <button id="btn-next-round" class="btn-submit-attempt btn-full-width">
-              <span>NEXT TRACK</span>
+              <span>Next Track</span>
               <i class="fa-solid fa-arrow-right"></i>
             </button>
           </div>
@@ -523,15 +519,15 @@
       </div>
 
       <!-- ============================================================
-           MODAL 2: SESSION SUMMARY & TELEMETRY
+           MODAL 2: SESSION SUMMARY
            ============================================================ -->
       <div id="modal-summary" class="modal-backdrop-scrim" style="display: none;">
         <div class="modal-card-chassis summary-chassis">
           
           <div class="summary-topline">
             <span class="summary-trophy-icon">🏆</span>
-            <h2 class="summary-main-heading">SESSION COMPLETE</h2>
-            <p class="summary-subcaption">Telemetry logged by BeatDrop Sound System</p>
+            <h2 class="summary-main-heading">Session Complete</h2>
+            <p class="summary-subcaption">Here's how you performed in this challenge</p>
           </div>
 
           <div class="telemetry-stats-matrix">
@@ -558,17 +554,17 @@
               <span>SHAREABLE SCORE CARD</span>
               <span class="share-sub">Wordle / Heardle format</span>
             </div>
-            <pre class="share-log-output" id="share-grid-text">Logging telemetry...</pre>
+            <pre class="share-log-output" id="share-grid-text">Logging results...</pre>
             <button id="btn-copy-score" class="btn-copy-log">
               <i class="fa-regular fa-copy"></i>
-              <span>COPY SCORE TO CLIPBOARD</span>
+              <span>Copy Score to Clipboard</span>
             </button>
           </div>
 
           <div class="modal-action-footer">
             <button id="btn-play-again" class="btn-submit-attempt btn-full-width">
               <i class="fa-solid fa-rotate-right"></i>
-              <span>START ANOTHER PLAYLIST</span>
+              <span>Play Another Playlist</span>
             </button>
           </div>
 

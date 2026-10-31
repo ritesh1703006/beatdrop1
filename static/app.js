@@ -175,16 +175,16 @@ function updateAudioStatus(status, text) {
   if (!dot || !label) return;
   if (status === "ready") {
     dot.className = "status-indicator ready";
-    label.textContent = text || "AUDIO ACTIVE";
+    label.textContent = text || "Audio Ready";
   } else {
     dot.className = "status-indicator connecting";
-    label.textContent = text || "CONNECTING...";
+    label.textContent = text || "Connecting...";
   }
 }
 
 function onPlayerReady(event) {
   isPlayerReady = true;
-  updateAudioStatus("ready", "AUDIO ACTIVE");
+  updateAudioStatus("ready", "Audio Ready");
   try {
     ytPlayer.setVolume(100);
   } catch (e) {}
@@ -734,7 +734,7 @@ function updateNavStats() {
 function toggleSnippetPlayback() {
   if (!isPlayerReady || !ytPlayer) {
     pendingPlayAfterReady = true;
-    showFeedback("Connecting audio engine... will play automatically in a moment!", false);
+    showFeedback("Connecting audio... will play automatically in a moment!", false);
     initYouTubePlayer();
     return;
   }
@@ -749,7 +749,7 @@ function toggleSnippetPlayback() {
 async function playCurrentSnippet() {
   if (!isPlayerReady || !ytPlayer) {
     pendingPlayAfterReady = true;
-    showFeedback("Connecting audio engine... will play automatically in a moment!", false);
+    showFeedback("Connecting audio... will play automatically in a moment!", false);
     initYouTubePlayer();
     return;
   }
@@ -1265,6 +1265,6 @@ function triggerConfetti() {
     particleCount: 90,
     spread: 75,
     origin: { y: 0.65 },
-    colors: ["#ccff00", "#00f0ff", "#ff5500", "#1ed760", "#ffb703"]
+    colors: ["#10b981", "#f59e0b", "#f43f5e", "#6366f1", "#ffffff"]
   });
 }
