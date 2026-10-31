@@ -337,6 +337,9 @@ const duelUI = {
   btnOnlineBuzzer: document.getElementById("btn-online-buzzer"),
   onlineBuzzerLabel: document.getElementById("online-buzzer-label"),
   onlineBuzzerSubtext: document.getElementById("online-buzzer-subtext"),
+  btnExitOnlineMatch: document.getElementById("btn-exit-online-match"),
+  duelLiveBanner: document.getElementById("duel-live-banner"),
+  soloTelemetryRow: document.getElementById("solo-telemetry-row"),
 
   // Duel summary
   duelSummaryPod: document.getElementById("duel-summary-pod"),
@@ -389,7 +392,8 @@ const modalReveal = {
   ytLink: document.getElementById("reveal-yt-link"),
   btnToggleFull: document.getElementById("btn-toggle-full-player"),
   revealPlayIcon: document.getElementById("reveal-play-icon"),
-  btnNextRound: document.getElementById("btn-next-round")
+  btnNextRound: document.getElementById("btn-next-round"),
+  btnExitReveal: document.getElementById("btn-exit-reveal")
 };
 
 const modalSummary = {
@@ -400,7 +404,8 @@ const modalSummary = {
   sub1sCount: document.getElementById("summary-sub1s-count"),
   shareGrid: document.getElementById("share-grid-text"),
   btnCopyScore: document.getElementById("btn-copy-score"),
-  btnPlayAgain: document.getElementById("btn-play-again")
+  btnPlayAgain: document.getElementById("btn-play-again"),
+  btnExit: document.getElementById("btn-exit-summary")
 };
 
 const modalHistory = {
@@ -554,7 +559,20 @@ function attachEventListeners() {
     duelNav.btnQuitDuel.addEventListener("click", () => {
       if (confirm("Quit 1v1 Duel session and return to lobby?")) {
         stopSnippetPlayback();
-        showScreen("setup");
+        if (state.mode === "duel-online") {
+          leaveOnlineRoom(true);
+        } else {
+          showScreen("setup");
+        }
+      }
+    });
+  }
+
+  if (duelUI.btnExitOnlineMatch) {
+    duelUI.btnExitOnlineMatch.addEventListener("click", () => {
+      if (confirm("Leave this 1v1 Duel match and return to lobby?")) {
+        stopSnippetPlayback();
+        leaveOnlineRoom(true);
       }
     });
   }
@@ -661,8 +679,33 @@ function attachEventListeners() {
 
   modalReveal.btnNextRound.addEventListener("click", nextRound);
   modalReveal.btnToggleFull.addEventListener("click", toggleFullTrackPlayback);
+  if (modalReveal.btnExitReveal) {
+    modalReveal.btnExitReveal.addEventListener("click", () => {
+      if (confirm("Quit 1v1 Duel session and return to lobby?")) {
+        modalReveal.overlay.style.display = "none";
+        stopSnippetPlayback();
+        if (state.mode === "duel-online") {
+          leaveOnlineRoom(true);
+        } else {
+          showScreen("setup");
+        }
+      }
+    });
+  }
+
   modalSummary.btnPlayAgain.addEventListener("click", restartGame);
   modalSummary.btnCopyScore.addEventListener("click", copyShareScore);
+  if (modalSummary.btnExit) {
+    modalSummary.btnExit.addEventListener("click", () => {
+      modalSummary.overlay.style.display = "none";
+      stopSnippetPlayback();
+      if (state.mode === "duel-online") {
+        leaveOnlineRoom(true);
+      } else {
+        showScreen("setup");
+      }
+    });
+  }
 
   document.addEventListener("keydown", (e) => {
     if (document.activeElement === gameUI.guessInput) return;
@@ -983,6 +1026,12 @@ function handleRoomUpdate(room, role) {
     if (duelUI.onlineHudGuestScore) duelUI.onlineHudGuestScore.textContent = `${room.guest ? room.guest.score : 0} PTS`;
     if (duelUI.onlineHudRound) duelUI.onlineHudRound.textContent = `ROUND ${room.round} / ${room.total_rounds}`;
 
+    // Sync header scoreboard with online match
+    if (duelNav.p1Name && room.host) duelNav.p1Name.textContent = room.host.name;
+    if (duelNav.p1Score && room.host) duelNav.p1Score.textContent = `${room.host.score} PTS`;
+    if (duelNav.p2Name && room.guest) duelNav.p2Name.textContent = room.guest.name;
+    if (duelNav.p2Score && room.guest) duelNav.p2Score.textContent = `${room.guest.score} PTS`;
+
     if (state.online.lastRound !== room.round) {
       state.online.lastRound = room.round;
       modalReveal.overlay.style.display = "none";
@@ -1022,7 +1071,7 @@ function handleRoomUpdate(room, role) {
           duelUI.btnOnlineBuzzer.className = "btn-online-buzzer locked-out";
         }
         if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = `⏳ ${room.buzzer.player_name.toUpperCase()} BUZZED!`;
-        if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Waiting for opponent's guess...";
+        if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = `Opponent guessing (${room.buzzer.seconds_left}s left)...`;
         
         gameUI.guessInput.disabled = true;
         stopSnippetPlayback();
@@ -1033,7 +1082,7 @@ function handleRoomUpdate(room, role) {
         duelUI.btnOnlineBuzzer.className = "btn-online-buzzer";
       }
       if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = "⚡ TAP TO BUZZ IN!";
-      if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Freezes music & unlocks 10s guess window";
+      if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Freezes music & unlocks 15s guess window";
       
       gameUI.guessInput.disabled = true;
     }
@@ -1052,7 +1101,7 @@ function handleRoomUpdate(room, role) {
 function resetOnlineBuzzerUI() {
   if (duelUI.btnOnlineBuzzer) duelUI.btnOnlineBuzzer.className = "btn-online-buzzer";
   if (duelUI.onlineBuzzerLabel) duelUI.onlineBuzzerLabel.textContent = "⚡ TAP TO BUZZ IN!";
-  if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Freezes music & unlocks 10s guess window";
+  if (duelUI.onlineBuzzerSubtext) duelUI.onlineBuzzerSubtext.textContent = "Freezes music & unlocks 15s guess window";
   if (duelUI.onlineBuzzerCountdown) duelUI.onlineBuzzerCountdown.style.display = "none";
   gameUI.guessInput.disabled = true;
 }
@@ -1334,26 +1383,44 @@ function showScreen(screenName) {
     if (duelNav.container) duelNav.container.style.display = "none";
     if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "none";
     if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "none";
+    if (duelUI.duelLiveBanner) duelUI.duelLiveBanner.style.display = "none";
   } else {
     screens.game.classList.add("active");
+    const timelineBar = document.getElementById("segmented-progress-bar");
+
     if (state.mode === "duel-local") {
       nav.stats.style.display = "none";
       if (duelNav.container) duelNav.container.style.display = "flex";
       if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "flex";
       if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "none";
       if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "none";
+      if (timelineBar) timelineBar.style.display = "none";
+      if (duelUI.soloTelemetryRow) duelUI.soloTelemetryRow.style.display = "none";
+      if (duelUI.duelLiveBanner) duelUI.duelLiveBanner.style.display = "flex";
+      if (gameUI.btnSkipLevel) gameUI.btnSkipLevel.style.display = "none";
+      if (modalReveal.btnExitReveal) modalReveal.btnExitReveal.style.display = "inline-flex";
     } else if (state.mode === "duel-online") {
       nav.stats.style.display = "none";
-      if (duelNav.container) duelNav.container.style.display = "none";
+      if (duelNav.container) duelNav.container.style.display = "flex";
       if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "none";
       if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "flex";
       if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "block";
+      if (timelineBar) timelineBar.style.display = "none";
+      if (duelUI.soloTelemetryRow) duelUI.soloTelemetryRow.style.display = "none";
+      if (duelUI.duelLiveBanner) duelUI.duelLiveBanner.style.display = "flex";
+      if (gameUI.btnSkipLevel) gameUI.btnSkipLevel.style.display = "none";
+      if (modalReveal.btnExitReveal) modalReveal.btnExitReveal.style.display = "inline-flex";
     } else {
       nav.stats.style.display = "flex";
       if (duelNav.container) duelNav.container.style.display = "none";
       if (duelUI.buzzersBay) duelUI.buzzersBay.style.display = "none";
       if (duelUI.onlineMatchStrip) duelUI.onlineMatchStrip.style.display = "none";
       if (duelUI.onlineBuzzerBay) duelUI.onlineBuzzerBay.style.display = "none";
+      if (timelineBar) timelineBar.style.display = "grid";
+      if (duelUI.soloTelemetryRow) duelUI.soloTelemetryRow.style.display = "flex";
+      if (duelUI.duelLiveBanner) duelUI.duelLiveBanner.style.display = "none";
+      if (gameUI.btnSkipLevel) gameUI.btnSkipLevel.style.display = "inline-flex";
+      if (modalReveal.btnExitReveal) modalReveal.btnExitReveal.style.display = "none";
     }
   }
 }

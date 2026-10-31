@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=history2.2">
+  <link rel="stylesheet" href="style.css?v=duel15s">
 </head>
 <body>
   <!-- Ambient Atmospheric Lighting -->
@@ -102,6 +102,7 @@
           </div>
           <button id="btn-quit-duel" class="btn-quit-session" title="Exit to Lobby">
             <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>EXIT</span>
           </button>
         </div>
 
@@ -428,7 +429,7 @@
               <span class="hud-round-indicator" id="online-hud-round">ROUND 1 / 5</span>
               <div class="hud-countdown-meter" id="online-buzzer-countdown" style="display: none;">
                 <i class="fa-solid fa-stopwatch"></i>
-                <span id="online-timer-seconds">10s</span>
+                <span id="online-timer-seconds">15s</span>
               </div>
             </div>
             <div class="hud-player-box guest-side" id="hud-guest-box">
@@ -436,6 +437,10 @@
               <strong class="hud-player-name" id="online-hud-guest-name">Guest</strong>
               <span class="hud-score-badge" id="online-hud-guest-score">0 PTS</span>
             </div>
+            <button id="btn-exit-online-match" class="btn-quit-session hud-exit-btn" title="Leave Online Match">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>EXIT</span>
+            </button>
           </div>
 
           <!-- Centerpiece: Compact Turntable Deck + Stereo Peak Meters -->
@@ -491,7 +496,8 @@
 
             <!-- Inline Master Controls & Telemetry -->
             <div class="compact-control-pod">
-              <div class="telemetry-compact-row">
+              <!-- Solo Compact Telemetry Metric Row -->
+              <div class="telemetry-compact-row" id="solo-telemetry-row">
                 <div class="compact-metric">
                   <span class="m-tag">STAGE</span>
                   <strong class="m-val accent" id="current-level-tag">STAGE 1</strong>
@@ -504,6 +510,12 @@
                   <span class="m-tag">VALUE</span>
                   <strong class="m-val gold" id="current-points-tag">+1,000 PTS</strong>
                 </div>
+              </div>
+
+              <!-- 1v1 Duel Battle Live Banner (Visible only in duel modes) -->
+              <div class="duel-live-banner" id="duel-live-banner" style="display: none;">
+                <span class="duel-banner-pill"><i class="fa-solid fa-bolt"></i> 1V1 SPEED BUZZER</span>
+                <span class="duel-banner-sub">First to buzz gets 15s to guess & score!</span>
               </div>
 
               <div class="play-action-cluster">
@@ -550,7 +562,7 @@
                 <i class="fa-solid fa-bolt buzzer-bolt-icon"></i>
                 <div class="buzzer-text-stack">
                   <strong class="buzzer-main-label" id="online-buzzer-label">⚡ BUZZ IN TO GUESS!</strong>
-                  <span class="buzzer-sub-label" id="online-buzzer-subtext">Freezes music & unlocks 10s guess window</span>
+                  <span class="buzzer-sub-label" id="online-buzzer-subtext">Freezes music & unlocks 15s guess window</span>
                 </div>
               </div>
             </button>
@@ -725,10 +737,14 @@
             </div>
           </div>
 
-          <div class="modal-action-footer">
+          <div class="modal-action-footer reveal-action-footer">
             <button id="btn-next-round" class="btn-submit-attempt btn-full-width">
               <span>NEXT TRACK</span>
               <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button id="btn-exit-reveal" class="btn-forfeit-attempt btn-exit-duel" style="display: none;" title="Exit Duel">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>LEAVE DUEL</span>
             </button>
           </div>
 
@@ -797,10 +813,14 @@
             </button>
           </div>
 
-          <div class="modal-action-footer">
-            <button id="btn-play-again" class="btn-submit-attempt btn-full-width">
+          <div class="modal-action-footer summary-action-footer">
+            <button id="btn-play-again" class="btn-submit-attempt">
               <i class="fa-solid fa-rotate-right"></i>
               <span>PLAY AGAIN</span>
+            </button>
+            <button id="btn-exit-summary" class="btn-forfeit-attempt btn-exit-duel" title="Exit to Setup / Lobby">
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              <span>EXIT TO LOBBY</span>
             </button>
           </div>
 
@@ -865,7 +885,7 @@
   </div>
 
   <!-- Application Engine -->
-  <script src="app.js?v=history2.2"></script>
+  <script src="app.js?v=duel15s"></script>
   <!-- YouTube IFrame API -->
   <script src="https://www.youtube.com/iframe_api"></script>
 </body>

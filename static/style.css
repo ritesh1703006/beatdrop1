@@ -1093,56 +1093,70 @@ body {
 
 /* Online Mobile Buzzer Deck */
 .online-buzzer-container {
-  margin: 0.5rem 0;
+  margin: 0.85rem 0;
   animation: viewFade 0.2s ease-out;
 }
 
 .btn-online-buzzer {
   width: 100%;
+  min-height: 74px;
   position: relative;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 0.85rem 1.25rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 2px solid rgba(255, 215, 0, 0.6);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.5rem;
   cursor: pointer;
   color: #0b0d14;
-  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.35);
-  transition: transform 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
   overflow: hidden;
 }
 
 .btn-online-buzzer:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .btn-online-buzzer:active {
   transform: translateY(1px);
+  box-shadow: 0 3px 12px rgba(245, 158, 11, 0.3);
 }
 
 .btn-online-buzzer.active-buzzer {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #34d399;
   color: #fff;
-  box-shadow: 0 0 24px rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 35px rgba(16, 185, 129, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  animation: pulseBuzzerActive 1s infinite alternate;
+}
+
+@keyframes pulseBuzzerActive {
+  0% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+  100% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.9); }
 }
 
 .btn-online-buzzer.locked-out {
-  opacity: 0.45;
-  filter: grayscale(0.8);
+  background: #1c202d;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  opacity: 0.65;
   cursor: not-allowed;
   pointer-events: none;
+  box-shadow: none;
 }
 
 .online-buzzer-inner {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.85rem;
+  gap: 1.15rem;
 }
 
 .buzzer-bolt-icon {
-  font-size: 1.4rem;
+  font-size: 2rem;
   line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
 }
 
 .buzzer-text-stack {
@@ -1153,15 +1167,16 @@ body {
 
 .buzzer-main-label {
   font-family: var(--font-mono);
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: 900;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .buzzer-sub-label {
-  font-size: 0.68rem;
-  font-weight: 600;
-  opacity: 0.85;
+  font-size: 0.78rem;
+  font-weight: 700;
+  opacity: 0.9;
 }
 
 /* Platform Strip */
@@ -3205,4 +3220,111 @@ body {
   color: var(--text-dim);
   text-align: center;
   padding: 1.5rem;
+}
+
+/* ============================================================
+   1V1 DUEL SPEED BATTLE & EXIT ENHANCEMENTS
+   ============================================================ */
+
+.duel-live-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.45rem 1rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-xs);
+  margin-bottom: 0.65rem;
+  animation: viewFade 0.2s ease-out;
+}
+
+.duel-banner-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.duel-banner-sub {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.hud-exit-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  transition: var(--transition-fast);
+}
+
+.hud-exit-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.summary-action-footer, .reveal-action-footer {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.summary-action-footer .btn-submit-attempt,
+.reveal-action-footer .btn-submit-attempt {
+  flex: 1;
+}
+
+.btn-exit-duel {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-exit-duel:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+@media (max-width: 768px) {
+  .summary-action-footer, .reveal-action-footer {
+    flex-direction: column;
+  }
+  .summary-action-footer button, .reveal-action-footer button {
+    width: 100%;
+  }
+  .online-match-hud {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 }

@@ -938,13 +938,13 @@ def room_buzz(room_id: str):
                     "buzzer": r["buzzer"]
                 }), 409
 
-        # Lock buzzer to this player for 10 seconds
+        # Lock buzzer to this player for 15 seconds
         player_name = r["players"][role]["name"]
         r["buzzer"] = {
             "player": role,
             "player_name": player_name,
             "timestamp": now,
-            "expires_at": now + 10
+            "expires_at": now + 15
         }
         r["updated_at"] = now
         safe = sanitize_room(room_code, token)
